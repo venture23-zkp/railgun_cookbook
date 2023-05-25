@@ -100,6 +100,7 @@ export class UniV2LikeSubgraph {
             return 'sushiswap-v2-bsc';
           case NetworkName.Arbitrum:
             return 'sushiswap-v2-arbitrum';
+          case NetworkName.CeloAlfajores:
           case NetworkName.ArbitrumGoerli:
           case NetworkName.EthereumRopsten_DEPRECATED:
           case NetworkName.PolygonMumbai:

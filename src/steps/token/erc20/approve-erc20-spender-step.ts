@@ -113,6 +113,7 @@ export class ApproveERC20SpenderStep extends Step {
           return true;
         }
         return false;
+      case NetworkName.CeloAlfajores:
       case NetworkName.Railgun:
       case NetworkName.BNBChain:
       case NetworkName.Polygon:
