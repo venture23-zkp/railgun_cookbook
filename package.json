@@ -48,7 +48,7 @@
   },
   "devDependencies": {
     "@graphprotocol/client-cli": "^2.2.22",
-    "@railgun-community/quickstart": "venture23-zkp/quickstart.git#f90ffda610aa408cedd15b83d4547afff61f0beb",
+    "@railgun-community/quickstart": "venture23-zkp/quickstart.git#cf7e0ee1dbbc15d956dcb68aebf51fe3a4afad40",
     "@typechain/ethers-v5": "^10.2.0",
     "@types/chai": "^4.3.4",
     "@types/chai-as-promised": "^7.1.5",
