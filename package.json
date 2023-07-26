@@ -40,7 +40,7 @@
     "@graphql-mesh/store": "^0.9.20",
     "@graphql-mesh/types": "^0.91.14",
     "@graphql-mesh/utils": "^0.43.22",
-    "@railgun-community/shared-models": "venture23-zkp/shared-models.git#7ccbdb5b291e233923f97add438f856b2e18c660",
+    "@railgun-community/shared-models": "venture23-zkp/shared-models.git#cf7e0ee1dbbc15d956dcb68aebf51fe3a4afad40",
     "axios": "^1.4.0",
     "custom-uniswap-v2-sdk": "^3.2.0",
     "ethers": "^5.7.2",
