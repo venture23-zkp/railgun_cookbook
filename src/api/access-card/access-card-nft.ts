@@ -27,6 +27,15 @@ export class AccessCardNFT {
         throw new Error('Access card NFT not supported on this network');
     }
   }
+  
+  static supportsNetwork(networkName: NetworkName) {
+    try {
+      this.getAddressesForNetwork(networkName);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   static getOwnableContractAddress(
     networkName: NetworkName,

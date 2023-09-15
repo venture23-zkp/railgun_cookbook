@@ -137,9 +137,18 @@ export type RecipeRemoveLiquidityData = {
   deadlineTimestamp: number;
 };
 
+export type RecipeCreateAccessCard = {
+  encryptedNFTMetadata: string
+}
+
 export enum UniswapV2Fork {
   Uniswap = 'Uniswap',
   SushiSwap = 'SushiSwap',
   PancakeSwap = 'PancakeSwap',
   Quickswap = 'Quickswap',
 }
+
+export type AccessCardMetadata = {
+  name: string;
+  description: string;
+};

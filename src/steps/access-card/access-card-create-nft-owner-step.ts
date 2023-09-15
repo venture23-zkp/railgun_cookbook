@@ -1,88 +1,92 @@
-import {
-  RecipeNFTInfo,
-  StepConfig,
-  StepInput,
-  UnvalidatedStepOutput,
-} from '../../models/export-models';
-import { Step } from '../step';
-import {
-  NFTTokenType,
-  RailgunNFTAmount,
-} from '@railgun-community/shared-models';
-import { compareNFTs } from '../../utils/token';
-import { AccessCardNFT } from '../../api/access-card/access-card-nft';
+// ------------THIS IS JUST A DEMO CODE------------
 
-import { AccessCardAccountCreatorContract } from '../../contract/access-card/access-card-account-creator-contract';
-import { Provider } from 'ethers';
+// import {
+//   RecipeNFTInfo,
+//   StepConfig,
+//   StepInput,
+//   UnvalidatedStepOutput,
+// } from '../../models/export-models';
+// import { Step } from '../step';
+// import {
+//   NFTTokenType,
+//   RailgunNFTAmount,
+// } from '@railgun-community/shared-models';
+// import { compareNFTs } from '../../utils/token';
+// import { AccessCardNFT } from '../../api/access-card/access-card-nft';
 
-export class AccessCardCreateNFTOwnerStep extends Step {
-  readonly config: StepConfig = {
-    name: 'Access Card Create NFT Owner',
-    description:
-      'Creates an Ownable Contract and assigns Access Card NFT as owner.',
-  };
+// import { AccessCardAccountCreatorContract } from '../../contract/access-card/access-card-account-creator-contract';
+// import { Provider } from 'ethers';
 
-  private readonly accessCardNFTAddress: string;
+// export class AccessCardCreateNFTOwnerStep extends Step {
+//   readonly config: StepConfig = {
+//     name: 'Access Card Create NFT Owner',
+//     description:
+//       'Creates an Ownable Contract and assigns Access Card NFT as owner.',
+//   };
 
-  private readonly nftTokenSubID: bigint;
+//   private readonly accessCardNFTAddress: string;
 
-  private readonly ownableContractAddress: string;
+//   private readonly nftTokenSubID: bigint;
 
-  private readonly provider: Provider;
+//   private readonly ownableContractAddress: string;
 
-  constructor(
-    accessCardNFTAddress: string,
-    nftTokenSubID: bigint,
-    ownableContractAddress: string,
-    provider: Provider,
-  ) {
-    super();
-    this.accessCardNFTAddress = accessCardNFTAddress;
-    this.nftTokenSubID = nftTokenSubID;
-    this.ownableContractAddress = ownableContractAddress;
-    this.provider = provider;
-  }
+//   private readonly provider: Provider;
 
-  protected async getStepOutput(
-    input: StepInput,
-  ): Promise<UnvalidatedStepOutput> {
-    const { networkName, nfts } = input;
+//   constructor(
+//     accessCardNFTAddress: string,
+//     nftTokenSubID: bigint,
+//     ownableContractAddress: string,
+//     provider: Provider,
+//   ) {
+//     super();
+//     this.accessCardNFTAddress = accessCardNFTAddress;
+//     this.nftTokenSubID = nftTokenSubID;
+//     this.ownableContractAddress = ownableContractAddress;
+//     this.provider = provider;
+//   }
 
-    const accessCardNFT: RailgunNFTAmount = {
-      nftAddress: this.accessCardNFTAddress,
-      nftTokenType: NFTTokenType.ERC721,
-      tokenSubID: this.nftTokenSubID.toString(),
-      amount: 1n,
-    };
+//   protected async getStepOutput(
+//     input: StepInput,
+//   ): Promise<UnvalidatedStepOutput> {
+//     const { networkName, nfts } = input;
 
-    // Ensure that NFT exists.
-    const { nftAmountForStep, unusedNFTAmounts } = this.getValidInputNFTAmount(
-      nfts,
-      nftAmount =>
-        compareNFTs(accessCardNFT, nftAmount) && nftAmount.owns == null,
-    );
+//     const accessCardNFT: RailgunNFTAmount = {
+//       nftAddress: this.accessCardNFTAddress,
+//       nftTokenType: NFTTokenType.ERC721,
+//       tokenSubID: this.nftTokenSubID.toString(),
+//       amount: 1n,
+//     };
 
-    const { accountCreator } =
-      AccessCardNFT.getAddressesForNetwork(networkName);
+//     // Ensure that NFT exists.
+//     const { nftAmountForStep, unusedNFTAmounts } = this.getValidInputNFTAmount(
+//       nfts,
+//       nftAmount =>
+//         compareNFTs(accessCardNFT, nftAmount) && nftAmount.owns == null,
+//     );
 
-    const creator = new AccessCardAccountCreatorContract(
-      accountCreator,
-      this.provider,
-    );
-    const crossContractCall = await creator.createDeploy(
-      this.accessCardNFTAddress,
-      this.nftTokenSubID,
-    );
+//     const { accountCreator } =
+//       AccessCardNFT.getAddressesForNetwork(networkName);
 
-    const ownerNFT: RecipeNFTInfo = {
-      ...nftAmountForStep,
-      owns: this.ownableContractAddress,
-    };
+//     const creator = new AccessCardAccountCreatorContract(
+//       accountCreator,
+//       this.provider,
+//     );
+//     const crossContractCall = await creator.createDeploy(
+//       this.accessCardNFTAddress,
+//       this.nftTokenSubID,
+//     );
 
-    return {
-      crossContractCalls: [crossContractCall],
-      outputERC20Amounts: input.erc20Amounts,
-      outputNFTs: [ownerNFT, ...unusedNFTAmounts],
-    };
-  }
-}
+//     const ownerNFT: RecipeNFTInfo = {
+//       ...nftAmountForStep,
+//       owns: this.ownableContractAddress,
+//     };
+
+//     return {
+//       crossContractCalls: [crossContractCall],
+//       outputERC20Amounts: input.erc20Amounts,
+//       outputNFTs: [ownerNFT, ...unusedNFTAmounts],
+//     };
+//   }
+// }
+
+export default {};

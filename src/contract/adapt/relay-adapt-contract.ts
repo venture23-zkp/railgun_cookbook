@@ -75,4 +75,8 @@ export class RelayAdaptContract {
     };
     return this.contract.transfer.populateTransaction([erc20Transfer]);
   }
+
+  createNFTAccount() {
+    return this.contract.createNftAccounts.populateTransaction();
+  }
 }

@@ -222,11 +222,16 @@ export declare namespace RelayAdapt {
 export interface RelayAdaptInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "accountRegistry"
+      | "createNftAccounts"
       | "getAdaptParams"
       | "multicall"
+      | "onERC721Received"
       | "railgun"
+      | "receivedERC721"
       | "relay"
       | "shield"
+      | "tokenContracts"
       | "transfer"
       | "unwrapBase"
       | "wBase"
@@ -236,6 +241,14 @@ export interface RelayAdaptInterface extends Interface {
   getEvent(nameOrSignatureOrTopic: "CallError"): EventFragment;
 
   encodeFunctionData(
+    functionFragment: "accountRegistry",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "createNftAccounts",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "getAdaptParams",
     values: [TransactionStruct[], RelayAdapt.ActionDataStruct]
   ): string;
@@ -243,7 +256,15 @@ export interface RelayAdaptInterface extends Interface {
     functionFragment: "multicall",
     values: [boolean, RelayAdapt.CallStruct[]]
   ): string;
+  encodeFunctionData(
+    functionFragment: "onERC721Received",
+    values: [AddressLike, AddressLike, BigNumberish, BytesLike]
+  ): string;
   encodeFunctionData(functionFragment: "railgun", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "receivedERC721",
+    values: [AddressLike, BigNumberish]
+  ): string;
   encodeFunctionData(
     functionFragment: "relay",
     values: [TransactionStruct[], RelayAdapt.ActionDataStruct]
@@ -251,6 +272,10 @@ export interface RelayAdaptInterface extends Interface {
   encodeFunctionData(
     functionFragment: "shield",
     values: [ShieldRequestStruct[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "tokenContracts",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "transfer",
@@ -267,13 +292,33 @@ export interface RelayAdaptInterface extends Interface {
   ): string;
 
   decodeFunctionResult(
+    functionFragment: "accountRegistry",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "createNftAccounts",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getAdaptParams",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "multicall", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "onERC721Received",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "railgun", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "receivedERC721",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "relay", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "shield", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "tokenContracts",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "transfer", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "unwrapBase", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "wBase", data: BytesLike): Result;
@@ -337,6 +382,10 @@ export interface RelayAdapt extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  accountRegistry: TypedContractMethod<[], [string], "view">;
+
+  createNftAccounts: TypedContractMethod<[], [void], "nonpayable">;
+
   getAdaptParams: TypedContractMethod<
     [
       _transactions: TransactionStruct[],
@@ -352,7 +401,24 @@ export interface RelayAdapt extends BaseContract {
     "payable"
   >;
 
+  onERC721Received: TypedContractMethod<
+    [
+      arg0: AddressLike,
+      arg1: AddressLike,
+      tokenId: BigNumberish,
+      arg3: BytesLike
+    ],
+    [string],
+    "nonpayable"
+  >;
+
   railgun: TypedContractMethod<[], [string], "view">;
+
+  receivedERC721: TypedContractMethod<
+    [arg0: AddressLike, arg1: BigNumberish],
+    [bigint],
+    "view"
+  >;
 
   relay: TypedContractMethod<
     [
@@ -368,6 +434,8 @@ export interface RelayAdapt extends BaseContract {
     [void],
     "nonpayable"
   >;
+
+  tokenContracts: TypedContractMethod<[arg0: BigNumberish], [string], "view">;
 
   transfer: TypedContractMethod<
     [_transfers: RelayAdapt.TokenTransferStruct[]],
@@ -390,6 +458,12 @@ export interface RelayAdapt extends BaseContract {
   ): T;
 
   getFunction(
+    nameOrSignature: "accountRegistry"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "createNftAccounts"
+  ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "getAdaptParams"
   ): TypedContractMethod<
     [
@@ -407,8 +481,27 @@ export interface RelayAdapt extends BaseContract {
     "payable"
   >;
   getFunction(
+    nameOrSignature: "onERC721Received"
+  ): TypedContractMethod<
+    [
+      arg0: AddressLike,
+      arg1: AddressLike,
+      tokenId: BigNumberish,
+      arg3: BytesLike
+    ],
+    [string],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "railgun"
   ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "receivedERC721"
+  ): TypedContractMethod<
+    [arg0: AddressLike, arg1: BigNumberish],
+    [bigint],
+    "view"
+  >;
   getFunction(
     nameOrSignature: "relay"
   ): TypedContractMethod<
@@ -426,6 +519,9 @@ export interface RelayAdapt extends BaseContract {
     [void],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "tokenContracts"
+  ): TypedContractMethod<[arg0: BigNumberish], [string], "view">;
   getFunction(
     nameOrSignature: "transfer"
   ): TypedContractMethod<

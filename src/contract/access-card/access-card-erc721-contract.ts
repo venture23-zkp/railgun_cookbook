@@ -12,7 +12,11 @@ export class AccessCardERC721Contract {
     ) as unknown as AccessCardERC721;
   }
 
-  mint(toAddress: string, tokenId: bigint): Promise<ContractTransaction> {
-    return this.contract.mint.populateTransaction(toAddress, tokenId);
+  mint(): Promise<ContractTransaction> {
+    return this.contract.mint.populateTransaction();
+  }
+
+  setEncryptedMetadata(tokenId: bigint, encryptedMetadata: string): Promise<ContractTransaction> {
+    return this.contract.setEncryptedMetadata.populateTransaction(tokenId, encryptedMetadata);
   }
 }
