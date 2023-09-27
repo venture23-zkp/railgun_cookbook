@@ -22,7 +22,7 @@ export class RelayAdaptContract {
       throw new Error('Invalid address for Relay Adapt contract.');
     }
     this.contract = new Contract(
-      network.relayAdaptContract,
+      "0x3aB4dA0f8fa0E0Bb3db60ceE269c90Ea296b9a5b",
       abi.adapt.relay,
     ) as unknown as RelayAdapt;
   }

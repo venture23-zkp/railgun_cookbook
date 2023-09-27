@@ -12,11 +12,11 @@ import {
 import { Recipe } from '../../recipe';
 import { GMX } from '../../../api/gmx/gmx';
 import { GMXMintStakeGLPStep } from '../../../steps/vault/gmx/gmx-stake-mint-glp-step';
-import { AccessCardNFTMintStep } from '../../../steps/access-card/access-card-nft-mint-step';
+import { AccessCardNFTMintStep } from '../../../steps/access-card/nft-mint-step';
 import { AccessCardNFT } from '../../../api/access-card/access-card-nft';
 
 import { getRandomNFTID } from '../../../utils';
-import { AccessCardCreateNFTOwnerStep } from '../../../steps/access-card/access-card-create-nft-owner-step';
+import { AccessCardCreateNFTOwnerStep } from '../../../steps/access-card/create-nft-owner-step';
 import { Provider } from 'ethers';
 import { MIN_GAS_LIMIT_ANY_RECIPE } from '../../../models/min-gas-limits';
 
@@ -72,13 +72,8 @@ export class GMXMintStakeGLPRecipe extends Recipe {
       );
 
     return [
-      new AccessCardNFTMintStep(accessCardNFTAddress, this.nftTokenSubID),
-      new AccessCardCreateNFTOwnerStep(
-        accessCardNFTAddress,
-        this.nftTokenSubID,
-        ownableContractAddress,
-        this.provider,
-      ),
+      new AccessCardNFTMintStep(accessCardNFTAddress, ""),
+      new AccessCardCreateNFTOwnerStep(),
       new TransferERC20Step(ownableContractAddress, this.stakeERC20Info),
       // TODO: Add owner address to recipe inputs / NFTs
       // TODO: Approve from ownable contract

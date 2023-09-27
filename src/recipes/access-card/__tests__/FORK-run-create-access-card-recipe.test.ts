@@ -42,8 +42,8 @@ describe('FORK-run-create-access-card-recipe', function run() {
     );
   });
 
-  it('[FORK] Should run create-access-card-recipe', function run(done) {
-    this.timeout(200_000);
+  it('[FORK] Should run create-access-card-recipe', async function run() {
+    this.timeout(40_000);
     // if(shouldSkipForkTest(networkName)) {
     //   this.skip();
     // }

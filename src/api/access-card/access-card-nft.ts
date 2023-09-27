@@ -9,6 +9,11 @@ type AccessCardAccounts = {
 
 export class AccessCardNFT {
   static getAddressesForNetwork(networkName: NetworkName): AccessCardAccounts {
+    // todo:
+    return {
+      erc721: '0xCD021da010284100B81D3eef420e28451D232FAF',
+      accountCreator: '0xc6E48CC5F16d93873C31Fc74D7f228Cbf24e4B98',
+    };
     switch (networkName) {
       case NetworkName.Arbitrum:
         return {
@@ -29,6 +34,8 @@ export class AccessCardNFT {
   }
   
   static supportsNetwork(networkName: NetworkName) {
+    // todo:
+    return true;
     try {
       this.getAddressesForNetwork(networkName);
       return true;

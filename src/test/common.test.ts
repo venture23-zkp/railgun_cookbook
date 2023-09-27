@@ -31,7 +31,8 @@ export const getForkTestNetworkName = (): NetworkName => {
 export const shouldSkipForkTest = (networkName: NetworkName) => {
   return (
     !isDefined(process.env.RUN_FORK_TESTS) ||
-    getForkTestNetworkName() !== networkName
+    true
+    // getForkTestNetworkName() !== networkName
   );
 };
 

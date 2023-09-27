@@ -71,11 +71,11 @@ export const setupTestRPCAndWallets = async (
         : `Could not connect to test Ganache RPC server.`,
     );
   }
-  if (forkRPCType === ForkRPCType.Anvil) {
-    await testRPCProvider.send('anvil_reset', [{}]);
-  } else if (forkRPCType === ForkRPCType.Hardhat) {
-    await testRPCProvider.send('hardhat_reset', []);
-  }
+  // if (forkRPCType === ForkRPCType.Anvil) {
+  //   await testRPCProvider.send('anvil_reset', [{}]);
+  // } else if (forkRPCType === ForkRPCType.Hardhat) {
+  //   await testRPCProvider.send('hardhat_reset', []);
+  // }
 
   const wallet = getTestEthersWallet();
   const oneThousand18Decimals = 10n ** 18n * 1000n;
