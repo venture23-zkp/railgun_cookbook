@@ -328,7 +328,13 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [],
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "metadata",
+        type: "bytes32",
+      },
+    ],
     name: "mint",
     outputs: [],
     stateMutability: "nonpayable",

@@ -58,7 +58,7 @@ const getSupportedNetworkNamesForTest = (): NetworkName[] => {
 export const setupForkTests = async () => {
   const networkName = getForkTestNetworkName();
 
-  if (!Object.keys(NetworkName).includes(networkName)) {
+  if (!Object.values(NetworkName).includes(networkName)) {
     throw new Error(
       `Unrecognized network name, expected one of list: ${getSupportedNetworkNamesForTest().join(
         ', ',

@@ -31,8 +31,9 @@ export class AccessCardSetNFTMetadataStep extends Step {
     const contract = new AccessCardERC721Contract(this.accessCardNFTAddress);
 
     const nftTokenSubID = 0n;
+    const formattedEncryptedData = this.encryptedNFTMetadata.padStart(64, "0");
 
-    const crossContractCall = await contract.setEncryptedMetadata(nftTokenSubID, this.encryptedNFTMetadata);
+    const crossContractCall = await contract.setEncryptedMetadata(nftTokenSubID, formattedEncryptedData);
 
     return {
       crossContractCalls: [crossContractCall],

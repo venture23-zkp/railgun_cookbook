@@ -16,24 +16,30 @@ export class AccessCardNFTMintStep extends Step {
   };
 
   private readonly accessCardNFTAddress: string;
+  private readonly encryptedNFTMetadata: string;
 
-  constructor(accessCardNFTAddress: string) {
+  constructor(accessCardNFTAddress: string, encryptedNFTMetadata: string) {
+    if(encryptedNFTMetadata.length > 64) {
+      throw new Error("EncryptedNFTMetadata should be less than or equal to 32 bytes");
+    }
     super();
     this.accessCardNFTAddress = accessCardNFTAddress;
+    this.encryptedNFTMetadata = encryptedNFTMetadata;
   }
 
   protected async getStepOutput(
     input: StepInput,
   ): Promise<UnvalidatedStepOutput> {
+    const formattedEncryptedData = this.encryptedNFTMetadata.padStart(64, "0");
+
     const contract = new AccessCardERC721Contract(this.accessCardNFTAddress);
-    const crossContractCall = await contract.mint();
+    const crossContractCall = await contract.mint(formattedEncryptedData);
 
     const accessCardNFT: RecipeNFTInfo = {
       nftAddress: this.accessCardNFTAddress,
       nftTokenType: NFTTokenType.ERC721,
-      // todo:
       tokenSubID: '0',
-      amount: 1n,
+      amount: 0n,
       owns: undefined,
     };
 

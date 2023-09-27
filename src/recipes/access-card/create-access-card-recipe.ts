@@ -6,7 +6,6 @@ import { Recipe } from '../recipe';
 import { Step } from '../../steps';
 import { AccessCardCreateNFTOwnerStep } from '../../steps/access-card/create-nft-owner-step';
 import { AccessCardNFTMintStep } from '../../steps/access-card/nft-mint-step';
-import { AccessCardSetNFTMetadataStep } from '../../steps/access-card/set-nft-metadata';
 
 export class CreateAccessCardRecipe extends Recipe {
   readonly config: RecipeConfig = {
@@ -40,13 +39,11 @@ export class CreateAccessCardRecipe extends Recipe {
     const { erc721: accessCardNFTAddress } =
       AccessCardNFT.getAddressesForNetwork(networkName);
 
+    const { encryptedNFTMetadata } = this.createAccessCardData;
+
     return [
-      new AccessCardNFTMintStep(accessCardNFTAddress),
-      // new AccessCardSetNFTMetadataStep(
-      //   accessCardNFTAddress,
-      //   this.createAccessCardData.encryptedNFTMetadata,
-      // ),
-      // new AccessCardCreateNFTOwnerStep(),
+      new AccessCardNFTMintStep(accessCardNFTAddress, encryptedNFTMetadata),
+      new AccessCardCreateNFTOwnerStep(),
     ];
   }
 }

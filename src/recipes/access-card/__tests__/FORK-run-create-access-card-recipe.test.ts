@@ -1,7 +1,7 @@
 import { NetworkName } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { RecipeERC20Info, RecipeInput } from '../../../models/export-models';
+import { RecipeInput } from '../../../models/export-models';
 import { setRailgunFees } from '../../../init';
 import { CreateAccessCardRecipe } from '../create-access-card-recipe';
 import {
@@ -13,11 +13,13 @@ import {
   executeRecipeStepsAndAssertUnshieldBalances,
   shouldSkipForkTest,
 } from '../../../test/common.test';
-import { getTestRailgunWallet } from '../../../test/shared.test';
 
+import {
+  getTestEthersWallet,
+} from '../../../test/shared.test';
 
-import { AccessCard } from "../engine-code/access-card-encrypt";
-
+import { AccessCardERC721Contract } from '../../../contract/access-card/access-card-erc721-contract';
+import { AccessCardNFT } from '../../../api/access-card/access-card-nft';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -41,54 +43,46 @@ describe('FORK-run-create-access-card-recipe', function run() {
     );
   });
 
-  it('[FORK] Should run create-access-card-recipe', function run(done) {
+  it('[FORK] Should run create-access-card-recipe', async function run(done) {
     this.timeout(200_000);
-    // if(shouldSkipForkTest(networkName)) {
-    //   this.skip();
-    // }
-
-
-    const railgunWallet = getTestRailgunWallet();
-    const sender = railgunWallet.getViewingKeyPair();
-
-    let encryptedNftData =
-      AccessCard.encryptCardInfo({name: 'n', description: 'd'}, sender.privateKey);
-
-    if(encryptedNftData.length < 64) {
-      const prefix = '0x' + Array(64 - encryptedNftData.length).fill(0).join("");
-      encryptedNftData = prefix + encryptedNftData;
+    if(shouldSkipForkTest(networkName)) {
+      this.skip();
     }
+
+    // { name: "", description: `memo 🙀🧞🧞a,
+    //  🤡`}
+    let encryptedNftData = "30326d656d6f20f09f9980f09fa79ef09fa79e612c0a202020202020f09fa4a1";
 
     const recipe = new CreateAccessCardRecipe(encryptedNftData);
 
     const recipeInput: RecipeInput = {
       railgunAddress: MOCK_RAILGUN_WALLET_ADDRESS,
       networkName,
-      erc20Amounts: [
-        {
-          tokenAddress: '0xe76C6c83af64e4C60245D8C7dE953DF673a7A33D', // rail token
-          decimals: 18n,
-          amount: 1n,
-        },
-      ],
+      erc20Amounts: [],
       nfts: [],
     };
 
-    recipe
-      .getRecipeOutput(recipeInput)
-      .then(recipeOutput => {
-        executeRecipeStepsAndAssertUnshieldBalances(
-          recipe.config.name,
-          recipeInput,
-          recipeOutput,
-        )
-          .then(x => {
-            console.log('finished');
-            expect(x === undefined).to.equal(true);
-            done();
-          })
-          .catch(done);
-      })
-      .catch(done);
+    const wallet = getTestEthersWallet();
+
+    const { erc721: erc721Address } =
+      AccessCardNFT.getAddressesForNetwork(networkName);
+    const accessCardCtx = new AccessCardERC721Contract(erc721Address);
+    const getTotalSupplyTxn = await accessCardCtx.getTotalSupply();
+
+      const initialSupply = BigInt(
+        await wallet.call(getTotalSupplyTxn),
+      ) as bigint;
+
+      const recipeOutput = await recipe.getRecipeOutput(recipeInput);
+      await executeRecipeStepsAndAssertUnshieldBalances(
+        recipe.config.name,
+        recipeInput,
+        recipeOutput,
+      );
+
+      const newSupply = BigInt(await wallet.call(getTotalSupplyTxn)) as bigint;
+
+      expect(newSupply - initialSupply)
+        .to.equal(1n);
   });
 });
