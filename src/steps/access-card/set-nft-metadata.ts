@@ -1,10 +1,10 @@
-import { AccessCardERC721Contract } from 'contract/access-card/access-card-erc721-contract';
+import { AccessCardERC721Contract } from '../../contract/access-card/access-card-erc721-contract';
 import {
   StepConfig,
   StepInput,
   UnvalidatedStepOutput,
-} from 'models';
-import { Step } from 'steps/step';
+} from '../../models';
+import { Step } from '../../steps/step';
 
 export class AccessCardSetNFTMetadataStep extends Step {
   readonly config: StepConfig = {
@@ -31,8 +31,9 @@ export class AccessCardSetNFTMetadataStep extends Step {
     const contract = new AccessCardERC721Contract(this.accessCardNFTAddress);
 
     const nftTokenSubID = 0n;
+    const formattedEncryptedData = this.encryptedNFTMetadata.padStart(64, "0");
 
-    const crossContractCall = await contract.setEncryptedMetadata(nftTokenSubID, this.encryptedNFTMetadata);
+    const crossContractCall = await contract.setEncryptedMetadata(nftTokenSubID, formattedEncryptedData);
 
     return {
       crossContractCalls: [crossContractCall],

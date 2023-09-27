@@ -82,7 +82,7 @@ export interface AccessCardERC721Interface extends Interface {
     functionFragment: "isApprovedForAll",
     values: [AddressLike, AddressLike]
   ): string;
-  encodeFunctionData(functionFragment: "mint", values?: undefined): string;
+  encodeFunctionData(functionFragment: "mint", values: [BytesLike]): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
@@ -366,7 +366,7 @@ export interface AccessCardERC721 extends BaseContract {
     "view"
   >;
 
-  mint: TypedContractMethod<[], [void], "nonpayable">;
+  mint: TypedContractMethod<[metadata: BytesLike], [void], "nonpayable">;
 
   name: TypedContractMethod<[], [string], "view">;
 
@@ -471,7 +471,7 @@ export interface AccessCardERC721 extends BaseContract {
   >;
   getFunction(
     nameOrSignature: "mint"
-  ): TypedContractMethod<[], [void], "nonpayable">;
+  ): TypedContractMethod<[metadata: BytesLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "name"
   ): TypedContractMethod<[], [string], "view">;
