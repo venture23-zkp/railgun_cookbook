@@ -30,10 +30,8 @@ export class AccessCardNFTMintStep extends Step {
   protected async getStepOutput(
     input: StepInput,
   ): Promise<UnvalidatedStepOutput> {
-    const formattedEncryptedData = this.encryptedNFTMetadata.padStart(64, "0");
-
     const contract = new AccessCardERC721Contract(this.accessCardNFTAddress);
-    const crossContractCall = await contract.mint(formattedEncryptedData);
+    const crossContractCall = await contract.mint(this.encryptedNFTMetadata);
 
     const accessCardNFT: RecipeNFTInfo = {
       nftAddress: this.accessCardNFTAddress,

@@ -1,8 +1,11 @@
 import {
   gasEstimateForUnprovenCrossContractCalls,
+  gasEstimateForUnprovenTransfer,
   generateCrossContractCallsProof,
+  generateTransferProof,
   mnemonicToPKey,
   populateProvedCrossContractCalls,
+  populateProvedTransfer,
 } from '@railgun-community/wallet';
 import {
   EVMGasType,
@@ -92,6 +95,7 @@ export const createQuickstartCrossContractCallsForTest = async (
   networkName: NetworkName,
   recipeInput: RecipeInput,
   recipeOutput: RecipeOutput,
+  usePublicWallet: boolean,
 ): Promise<{
   gasEstimate: Optional<bigint>;
   transaction: ContractTransaction;
@@ -137,24 +141,23 @@ export const createQuickstartCrossContractCallsForTest = async (
 
   let gasEstimate: Optional<bigint>;
   try {
-    // const { gasEstimate: resolvedGasEstimate } =
-      // await gasEstimateForUnprovenCrossContractCalls(
-      //   networkName,
-      //   railgunWallet.id,
-      //   testConfig.encryptionKey,
-      //   unshieldERC20Amounts,
-      //   unshieldNFTs,
-      //   shieldERC20Recipients,
-      //   shieldNFTRecipients,
-      //   crossContractCalls,
-      //   MOCK_TRANSACTION_GAS_DETAILS_SERIALIZED_TYPE_2,
-      //   undefined, // feeTokenDetails
-      //   true, // sendWithPublicWallet
-      //   minGasLimit,
-      // );
+    const { gasEstimate: resolvedGasEstimate } =
+      await gasEstimateForUnprovenCrossContractCalls(
+        networkName,
+        railgunWallet.id,
+        testConfig.encryptionKey,
+        unshieldERC20Amounts,
+        unshieldNFTs,
+        shieldERC20Recipients,
+        shieldNFTRecipients,
+        crossContractCalls,
+        MOCK_TRANSACTION_GAS_DETAILS_SERIALIZED_TYPE_2,
+        undefined, // feeTokenDetails
+        usePublicWallet, // sendWithPublicWallet
+        minGasLimit,
+      );
 
-      //'[{"to":"0xCD021da010284100B81D3eef420e28451D232FAF","data":"0x1249c58b"},{"to":"0xCD021da010284100B81D3eef420e28451D232FAF","data":"0xccda57470000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000fdd67e3241c190a8eb207289161c5c7024"},{"to":"0x3aB4dA0f8fa0E0Bb3db60ceE269c90Ea296b9a5b","data":"0x5596d148"}]'
-    // gasEstimate = resolvedGasEstimate;
+    gasEstimate = resolvedGasEstimate;
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error(
@@ -174,7 +177,7 @@ export const createQuickstartCrossContractCallsForTest = async (
     shieldNFTRecipients,
     crossContractCalls,
     mockRelayerFeeRecipient,
-    false, // sendWithPublicWallet
+    usePublicWallet, // sendWithPublicWallet
     undefined, // overallBatchMinGasPrice
     minGasLimit,
     () => {}, // progressCallback
@@ -182,8 +185,7 @@ export const createQuickstartCrossContractCallsForTest = async (
 
   const transactionGasDetails: TransactionGasDetails = {
     ...MOCK_TRANSACTION_GAS_DETAILS_SERIALIZED_TYPE_1,
-    // gasEstimate: gasEstimate ?? minGasLimit,
-    gasEstimate: 4_000_000n,
+    gasEstimate: gasEstimate ?? minGasLimit,
   };
   const { transaction } = await populateProvedCrossContractCalls(
     networkName,
@@ -194,10 +196,72 @@ export const createQuickstartCrossContractCallsForTest = async (
     shieldNFTRecipients,
     crossContractCalls,
     mockRelayerFeeRecipient,
-    false, // sendWithPublicWallet
+    usePublicWallet, // sendWithPublicWallet
     undefined, // overallBatchMinGasPrice
     transactionGasDetails,
   );
 
   return { gasEstimate, transaction };
 };
+
+export async function createPrivateERC721Transfer(
+  networkName: NetworkName,
+  nftAmountRecipients: RailgunNFTAmountRecipient[],
+): Promise<{
+  gasEstimate: Optional<bigint>;
+  transaction: ContractTransaction;
+}> {
+  const railgunWallet = getTestRailgunWallet();
+  const encryptionKey = testConfig.encryptionKey;
+  const memoText = '';
+
+  const overallBatchMinGasPrice: Optional<bigint> = BigInt('0x10000');
+
+  const originalGasDetails: TransactionGasDetails = {
+    evmGasType: EVMGasType.Type2,
+    gasEstimate: 0n,
+    maxFeePerGas: BigInt(`0x100000`),
+    maxPriorityFeePerGas: BigInt('0x010000'),
+  };
+
+  const { gasEstimate } = await gasEstimateForUnprovenTransfer(
+    networkName,
+    railgunWallet.id,
+    encryptionKey,
+    memoText,
+    [],
+    nftAmountRecipients,
+    originalGasDetails,
+    undefined,
+    true,
+  );
+
+  await generateTransferProof(
+    networkName,
+    railgunWallet.id,
+    encryptionKey,
+    true,
+    memoText,
+    [],
+    nftAmountRecipients,
+    undefined,
+    true,
+    overallBatchMinGasPrice,
+    () => {},
+  );
+
+  const { transaction } = await populateProvedTransfer(
+    networkName,
+    railgunWallet.id,
+    true,
+    memoText,
+    [],
+    nftAmountRecipients,
+    undefined,
+    true,
+    overallBatchMinGasPrice,
+    { ...originalGasDetails, gasEstimate },
+  );
+
+  return { gasEstimate, transaction };
+}

@@ -4,7 +4,7 @@ import {
   StepInput,
   UnvalidatedStepOutput,
 } from '../../models';
-import { Step } from '../../steps/step';
+import { Step } from '../step';
 
 export class AccessCardSetNFTMetadataStep extends Step {
   readonly config: StepConfig = {
@@ -13,16 +13,18 @@ export class AccessCardSetNFTMetadataStep extends Step {
   };
 
   private readonly accessCardNFTAddress: string;
-
   private readonly encryptedNFTMetadata: string;
+  private readonly nftTokenSubID: string;
 
   constructor(
     accessCardNFTAddress: string,
     encryptedNFTMetadata: string,
+    nftTokenSubID: string,
   ) {
     super();
     this.accessCardNFTAddress = accessCardNFTAddress;
     this.encryptedNFTMetadata = encryptedNFTMetadata;
+    this.nftTokenSubID = nftTokenSubID;
   }
 
   protected async getStepOutput(
@@ -30,10 +32,7 @@ export class AccessCardSetNFTMetadataStep extends Step {
   ): Promise<UnvalidatedStepOutput> {
     const contract = new AccessCardERC721Contract(this.accessCardNFTAddress);
 
-    const nftTokenSubID = 0n;
-    const formattedEncryptedData = this.encryptedNFTMetadata.padStart(64, "0");
-
-    const crossContractCall = await contract.setEncryptedMetadata(nftTokenSubID, formattedEncryptedData);
+    const crossContractCall = await contract.setEncryptedMetadata(BigInt(this.nftTokenSubID), this.encryptedNFTMetadata);
 
     return {
       crossContractCalls: [crossContractCall],

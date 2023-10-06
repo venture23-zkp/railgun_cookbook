@@ -5,14 +5,17 @@ import {
 import {
   NETWORK_CONFIG,
   NetworkName,
+  RailgunNFTAmountRecipient,
   delay,
   isDefined,
 } from '@railgun-community/shared-models';
 import { RecipeInput, RecipeOutput } from '../models/export-models';
 import {
+  createPrivateERC721Transfer,
   createQuickstartCrossContractCallsForTest,
   getTestEthersWallet,
   getTestRailgunWallet,
+  getTestRailgunWallet2,
   testRPCProvider,
 } from './shared.test';
 import chai from 'chai';
@@ -31,8 +34,7 @@ export const getForkTestNetworkName = (): NetworkName => {
 export const shouldSkipForkTest = (networkName: NetworkName) => {
   return (
     !isDefined(process.env.RUN_FORK_TESTS) ||
-    true
-    // getForkTestNetworkName() !== networkName
+    getForkTestNetworkName() !== networkName
   );
 };
 
@@ -63,6 +65,7 @@ export const executeRecipeStepsAndAssertUnshieldBalances = async (
   recipeInput: RecipeInput,
   recipeOutput: RecipeOutput,
   expectPossiblePrecisionLossOverflow?: boolean,
+  usePublicWallet: boolean = false,
 ) => {
   const railgunWallet = getTestRailgunWallet();
   if (recipeInput.railgunAddress !== railgunWallet.getAddress()) {
@@ -99,6 +102,7 @@ export const executeRecipeStepsAndAssertUnshieldBalances = async (
       networkName,
       recipeInput,
       recipeOutput,
+      usePublicWallet
     );
 
   // console.log(`gas estimate for ${recipeOutput.name}: ${gasEstimate}`);
@@ -247,4 +251,70 @@ export const executeRecipeStepsAndAssertUnshieldBalances = async (
       );
     }),
   );
+};
+
+export const executePrivateNftTransfer = async (
+  name: string,
+  networkName: NetworkName,
+  nftAmountRecipients: RailgunNFTAmountRecipient[],
+) => {
+  const wallet = getTestEthersWallet();
+
+  const { transaction, gasEstimate } = await createPrivateERC721Transfer(
+    networkName,
+    nftAmountRecipients,
+  );
+
+  let txReceipt;
+
+  try {
+    const txResponse = await wallet.sendTransaction(transaction);
+    txReceipt = await txResponse.wait();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(err);
+
+    // Trace call and parse RelayAdapt log data to get error message.
+    const call = {
+      from: null,
+      to: transaction.to,
+      data: transaction.data,
+    };
+
+    // NOTE: This fails as output is too large for JS runtime.
+    // const trace = await provider.send('debug_traceCall', [call, 'latest']);
+
+    // eslint-disable-next-line no-console
+    console.log(
+      'Run this command to debug the transaction, followed by `node debug-return-value <returnValue>`:\n',
+    );
+    // eslint-disable-next-line no-console
+    console.log(
+      `curl http://localhost:8600 -X POST     -H "Content-Type: application/json"   --data '{"method":"debug_traceCall","params":[{"from":null,"to":"${call.to}","data":"${call.data}"}, "latest"],"id":1,"jsonrpc":"2.0"}' | cut -c 1-1000
+      \n`,
+    );
+
+    throw new Error(
+      'Unable to call transaction. To debug: (1) See above for Anvil RPC debug_traceCall command. Run to capture returnValue. (2) Run `node debug_return_value <returnValue>` at project root to get RelayAdapt error message.',
+    );
+  }
+
+  if (txReceipt == null) {
+    throw new Error('No transaction receipt');
+  }
+
+  const relayAdaptTransactionError = getRelayAdaptTransactionError(
+    txReceipt.logs,
+  );
+  if (isDefined(relayAdaptTransactionError)) {
+    throw new Error(
+      `${name}: Relay Adapt subcall revert: ${relayAdaptTransactionError}`,
+    );
+  }
+  if (txReceipt.status === 0) {
+    // eslint-disable-next-line no-console
+    throw new Error(
+      `${name}: Transaction reverted. Make sure the configured min gas limit is high enough.`,
+    );
+  }
 };

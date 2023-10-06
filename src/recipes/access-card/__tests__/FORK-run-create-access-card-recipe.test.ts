@@ -1,39 +1,42 @@
-import { NetworkName } from '@railgun-community/shared-models';
+import {
+  NFTTokenType,
+  NetworkName,
+  RailgunNFTAmountRecipient,
+} from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { RecipeInput } from '../../../models/export-models';
 import { setRailgunFees } from '../../../init';
 import { CreateAccessCardRecipe } from '../create-access-card-recipe';
+import { UpdateAccessCardMetadataRecipe } from '../update-access-card-metadata-recipe';
 import {
   MOCK_RAILGUN_WALLET_ADDRESS,
   MOCK_SHIELD_FEE_BASIS_POINTS,
   MOCK_UNSHIELD_FEE_BASIS_POINTS,
 } from '../../../test/mocks.test';
 import {
+  executePrivateNftTransfer,
   executeRecipeStepsAndAssertUnshieldBalances,
   shouldSkipForkTest,
 } from '../../../test/common.test';
 
 import {
-  getTestEthersWallet,
+  getTestProvider,
 } from '../../../test/shared.test';
 
 import { AccessCardERC721Contract } from '../../../contract/access-card/access-card-erc721-contract';
 import { AccessCardNFT } from '../../../api/access-card/access-card-nft';
+import { hexlify } from '@railgun-community/wallet';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-// todo: Use fork instead
 const networkName = NetworkName.Ethereum;
 
-const nftMetadata = {
-  name: 'Test nft name',
-  description: 'This is test description of the test NFT ',
-};
-
-describe('FORK-run-create-access-card-recipe', function run() {
-  this.timeout(240_000);
+describe('FORK-run-access-card-recipes', function run() {
+  //{ name: 'name 1', description: 'description 1' }
+  const encryptedNftData =
+    '4d594d3e82f43d8e97bb70cb9c6d4a3e2f57a1f43966a4017fdbeae708';
 
   before(async function run() {
     setRailgunFees(
@@ -43,15 +46,18 @@ describe('FORK-run-create-access-card-recipe', function run() {
     );
   });
 
-  it('[FORK] Should run create-access-card-recipe', async function run(done) {
-    this.timeout(200_000);
-    if(shouldSkipForkTest(networkName)) {
+  it('[FORK] Should run create-access-card-recipe', async function run() {
+    this.timeout(25_000);
+
+    if (shouldSkipForkTest(networkName)) {
       this.skip();
     }
 
-    // { name: "", description: `memo 🙀🧞🧞a,
-    //  🤡`}
-    let encryptedNftData = "30326d656d6f20f09f9980f09fa79ef09fa79e612c0a202020202020f09fa4a1";
+    const provider = getTestProvider();
+
+    const { erc721: erc721Address } =
+      AccessCardNFT.getAddressesForNetwork(networkName);
+    const accessCardCtx = new AccessCardERC721Contract(erc721Address, provider);
 
     const recipe = new CreateAccessCardRecipe(encryptedNftData);
 
@@ -62,27 +68,112 @@ describe('FORK-run-create-access-card-recipe', function run() {
       nfts: [],
     };
 
-    const wallet = getTestEthersWallet();
+    const initialSupply = (await accessCardCtx.getTotalSupply())[0];
+
+    const recipeOutput = await recipe.getRecipeOutput(recipeInput, true, true);
+    await executeRecipeStepsAndAssertUnshieldBalances(
+      recipe.config.name,
+      recipeInput,
+      recipeOutput,
+      true,
+      true,
+    );
+
+    const newSupply = (await accessCardCtx.getTotalSupply())[0];
+
+    expect(newSupply - initialSupply).to.equal(1n);
+  });
+
+  it('[FORK] Should retrieve the NFT metadata', async function run() {
+    this.timeout(5000);
+
+    const provider = getTestProvider();
 
     const { erc721: erc721Address } =
       AccessCardNFT.getAddressesForNetwork(networkName);
-    const accessCardCtx = new AccessCardERC721Contract(erc721Address);
-    const getTotalSupplyTxn = await accessCardCtx.getTotalSupply();
+    const accessCardCtx = new AccessCardERC721Contract(erc721Address, provider);
 
-      const initialSupply = BigInt(
-        await wallet.call(getTotalSupplyTxn),
-      ) as bigint;
+    if (shouldSkipForkTest(networkName)) {
+      this.skip();
+    }
 
-      const recipeOutput = await recipe.getRecipeOutput(recipeInput);
-      await executeRecipeStepsAndAssertUnshieldBalances(
-        recipe.config.name,
-        recipeInput,
-        recipeOutput,
-      );
+    // the minted nft metadata has tokenId 0n
+    const storedMetadata = await accessCardCtx.getEncryptedMetadata(0n);
 
-      const newSupply = BigInt(await wallet.call(getTotalSupplyTxn)) as bigint;
+    expect(storedMetadata[0]).to.equal(hexlify(encryptedNftData, true));
+  });
 
-      expect(newSupply - initialSupply)
-        .to.equal(1n);
+
+  // todo: this test case only passes only once when
+  // 1. token id is '0' and
+  // 2. the minting and update test cases are run sequentially, right after one another
+  it('[FORK] Should run update-access-card-metadata-recipe', async function run() {
+    this.timeout(25_000);
+
+    // 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+    const provider = getTestProvider();
+
+    const { erc721: erc721Address } =
+      AccessCardNFT.getAddressesForNetwork(networkName);
+    const accessCardCtx = new AccessCardERC721Contract(erc721Address, provider);
+
+    if (shouldSkipForkTest(networkName)) {
+      this.skip();
+    }
+
+    const updatedEncryptedMetadata = '3a389f3e0b09395930291029495010';
+    const nftTokenSubID = '0';
+
+    const recipe = new UpdateAccessCardMetadataRecipe(
+      updatedEncryptedMetadata,
+      nftTokenSubID,
+    );
+
+    const recipeInput: RecipeInput = {
+      railgunAddress: MOCK_RAILGUN_WALLET_ADDRESS,
+      networkName,
+      erc20Amounts: [],
+      nfts: [
+        {
+          nftAddress: AccessCardNFT.getAddressesForNetwork(networkName).erc721,
+          nftTokenType: NFTTokenType.ERC721,
+          tokenSubID: nftTokenSubID,
+          amount: 1n,
+          recipient: MOCK_RAILGUN_WALLET_ADDRESS,
+        },
+      ],
+    };
+
+    const recipeOutput = await recipe.getRecipeOutput(recipeInput);
+
+    await executeRecipeStepsAndAssertUnshieldBalances(
+      recipe.config.name,
+      recipeInput,
+      recipeOutput,
+    );
+
+    const finalMetadata = await accessCardCtx.getEncryptedMetadata(0n);
+
+    expect(finalMetadata).to.deep.equal([hexlify(updatedEncryptedMetadata, true)]);
+  });
+
+  // todo: This test case fails
+  it('[FORK] Should transfer access card to another user', async function () {
+    this.timeout(25_000);
+
+    // the first minted access card id is zero
+    const tokenSubID = '0';
+
+    const nftRecipients: RailgunNFTAmountRecipient = {
+      nftAddress: AccessCardNFT.getAddressesForNetwork(networkName).erc721,
+      nftTokenType: NFTTokenType.ERC721,
+      tokenSubID: tokenSubID,
+      amount: 1n,
+      recipientAddress: MOCK_RAILGUN_WALLET_ADDRESS,
+    };
+
+    await executePrivateNftTransfer('Transfer access card ERC721', networkName, [
+      nftRecipients,
+    ]);
   });
 });

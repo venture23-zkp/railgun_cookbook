@@ -276,9 +276,9 @@ const _abi = [
     name: "encryptedMetadata",
     outputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes",
         name: "",
-        type: "bytes32",
+        type: "bytes",
       },
     ],
     stateMutability: "view",
@@ -330,9 +330,9 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "bytes",
         name: "metadata",
-        type: "bytes32",
+        type: "bytes",
       },
     ],
     name: "mint",
@@ -495,9 +495,9 @@ const _abi = [
         type: "uint256",
       },
       {
-        internalType: "bytes32",
+        internalType: "bytes",
         name: "metadata",
-        type: "bytes32",
+        type: "bytes",
       },
     ],
     name: "setEncryptedMetadata",

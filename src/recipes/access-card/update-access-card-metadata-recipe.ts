@@ -1,29 +1,30 @@
 import { NetworkName } from '@railgun-community/shared-models';
 import { AccessCardNFT } from '../../api/access-card/access-card-nft';
-import { RecipeConfig, RecipeCreateAccessCard, RecipeInput, RecipeOutput, StepInput } from '../../models';
+import { RecipeConfig, StepInput } from '../../models';
 import { MIN_GAS_LIMIT_ANY_RECIPE } from '../../models/min-gas-limits';
 import { Recipe } from '../recipe';
 import { Step } from '../../steps';
-import { AccessCardCreateNFTOwnerStep } from '../../steps/access-card/create-nft-owner-step';
-import { AccessCardNFTMintStep } from '../../steps/access-card/nft-mint-step';
+import { AccessCardSetNFTMetadataStep } from '../../steps/access-card/set-nft-metadata';
 
-export class CreateAccessCardRecipe extends Recipe {
+export class UpdateAccessCardMetadataRecipe extends Recipe {
   readonly config: RecipeConfig = {
-    name: 'Create Access Card',
+    name: 'Update NFT Metadata',
     description:
-      'Creates an Ownable Contract and assigns Access Card NFT as owner',
+      'Updates Access Card NFT metadata',
     minGasLimit: MIN_GAS_LIMIT_ANY_RECIPE,
   };
 
-  private readonly createAccessCardData: RecipeCreateAccessCard;
+  private readonly encryptedNFTMetadata: string;
+  private readonly nftTokenSubID: string;
 
   /**
-   * Recipe to create an ownable contract and assign Access Card NFT as owner
+   * Recipe to update Access Card NFT metadata
    * @param {string} encryptedNFTMetadata Access Card `name` encrypted with user's viewing key
-  */
-  constructor(encryptedNFTMetadata: string) {
+   */
+  constructor(encryptedNFTMetadata: string, nftTokenSubID: string) {
     super();
-    this.createAccessCardData = { encryptedNFTMetadata };
+    this.encryptedNFTMetadata = encryptedNFTMetadata;
+    this.nftTokenSubID = nftTokenSubID;
   }
 
   protected supportsNetwork(networkName: NetworkName): boolean {
@@ -39,11 +40,12 @@ export class CreateAccessCardRecipe extends Recipe {
     const { erc721: accessCardNFTAddress } =
       AccessCardNFT.getAddressesForNetwork(networkName);
 
-    const { encryptedNFTMetadata } = this.createAccessCardData;
-
     return [
-      new AccessCardNFTMintStep(accessCardNFTAddress, encryptedNFTMetadata),
-      new AccessCardCreateNFTOwnerStep(),
+      new AccessCardSetNFTMetadataStep(
+        accessCardNFTAddress,
+        this.encryptedNFTMetadata,
+        this.nftTokenSubID,
+      ),
     ];
   }
 }
