@@ -72,7 +72,7 @@ export class GMXMintStakeGLPRecipe extends Recipe {
       );
 
     return [
-      new AccessCardNFTMintStep(accessCardNFTAddress),
+      new AccessCardNFTMintStep(accessCardNFTAddress, ""),
       new AccessCardCreateNFTOwnerStep(),
       new TransferERC20Step(ownableContractAddress, this.stakeERC20Info),
       // TODO: Add owner address to recipe inputs / NFTs

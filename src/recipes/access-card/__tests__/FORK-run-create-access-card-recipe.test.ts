@@ -3,6 +3,7 @@ import {
   NetworkName,
   RailgunNFTAmountRecipient,
 } from '@railgun-community/shared-models';
+import { hexlify } from '@railgun-community/wallet';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { RecipeInput } from '../../../models/export-models';
@@ -19,14 +20,12 @@ import {
   executeRecipeStepsAndAssertUnshieldBalances,
   shouldSkipForkTest,
 } from '../../../test/common.test';
-
 import {
   getTestProvider,
 } from '../../../test/shared.test';
 
 import { AccessCardERC721Contract } from '../../../contract/access-card/access-card-erc721-contract';
 import { AccessCardNFT } from '../../../api/access-card/access-card-nft';
-import { hexlify } from '@railgun-community/wallet';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -48,7 +47,6 @@ describe('FORK-run-access-card-recipes', function run() {
 
   it('[FORK] Should run create-access-card-recipe', async function run() {
     this.timeout(25_000);
-
     if (shouldSkipForkTest(networkName)) {
       this.skip();
     }
@@ -86,16 +84,15 @@ describe('FORK-run-access-card-recipes', function run() {
 
   it('[FORK] Should retrieve the NFT metadata', async function run() {
     this.timeout(5000);
+    if (shouldSkipForkTest(networkName)) {
+      this.skip();
+    }
 
     const provider = getTestProvider();
 
     const { erc721: erc721Address } =
       AccessCardNFT.getAddressesForNetwork(networkName);
     const accessCardCtx = new AccessCardERC721Contract(erc721Address, provider);
-
-    if (shouldSkipForkTest(networkName)) {
-      this.skip();
-    }
 
     // the minted nft metadata has tokenId 0n
     const storedMetadata = await accessCardCtx.getEncryptedMetadata(0n);
@@ -104,11 +101,14 @@ describe('FORK-run-access-card-recipes', function run() {
   });
 
 
-  // todo: this test case only passes only once when
+  // todo: Strangely this test case only passes only once when
   // 1. token id is '0' and
   // 2. the minting and update test cases are run sequentially, right after one another
   it('[FORK] Should run update-access-card-metadata-recipe', async function run() {
     this.timeout(25_000);
+    if (shouldSkipForkTest(networkName)) {
+      this.skip();
+    }
 
     // 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
     const provider = getTestProvider();
@@ -116,10 +116,6 @@ describe('FORK-run-access-card-recipes', function run() {
     const { erc721: erc721Address } =
       AccessCardNFT.getAddressesForNetwork(networkName);
     const accessCardCtx = new AccessCardERC721Contract(erc721Address, provider);
-
-    if (shouldSkipForkTest(networkName)) {
-      this.skip();
-    }
 
     const updatedEncryptedMetadata = '3a389f3e0b09395930291029495010';
     const nftTokenSubID = '0';
@@ -150,6 +146,8 @@ describe('FORK-run-access-card-recipes', function run() {
       recipe.config.name,
       recipeInput,
       recipeOutput,
+      true,
+      true
     );
 
     const finalMetadata = await accessCardCtx.getEncryptedMetadata(0n);
@@ -160,7 +158,10 @@ describe('FORK-run-access-card-recipes', function run() {
   // todo: This test case fails
   it('[FORK] Should transfer access card to another user', async function () {
     this.timeout(25_000);
-
+    if (shouldSkipForkTest(networkName)) {
+      this.skip();
+    }
+    
     // the first minted access card id is zero
     const tokenSubID = '0';
 

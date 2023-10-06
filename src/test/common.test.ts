@@ -15,7 +15,6 @@ import {
   createQuickstartCrossContractCallsForTest,
   getTestEthersWallet,
   getTestRailgunWallet,
-  getTestRailgunWallet2,
   testRPCProvider,
 } from './shared.test';
 import chai from 'chai';
