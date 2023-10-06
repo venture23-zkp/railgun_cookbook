@@ -1,10 +1,10 @@
-import { AccessCardERC721Contract } from 'contract/access-card/access-card-erc721-contract';
+import { AccessCardERC721Contract } from '../../contract/access-card/access-card-erc721-contract';
 import {
   StepConfig,
   StepInput,
   UnvalidatedStepOutput,
-} from 'models';
-import { Step } from 'steps/step';
+} from '../../models';
+import { Step } from '../../steps/step';
 
 export class AccessCardSetNFTMetadataStep extends Step {
   readonly config: StepConfig = {

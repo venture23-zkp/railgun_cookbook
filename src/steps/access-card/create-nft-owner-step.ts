@@ -1,6 +1,6 @@
-import { RelayAdaptContract } from 'contract';
-import { StepConfig, StepInput, UnvalidatedStepOutput } from 'models';
-import { Step } from 'steps/step';
+import { RelayAdaptContract } from '../../contract';
+import { StepConfig, StepInput, UnvalidatedStepOutput } from '../../models';
+import { Step } from '../../steps/step';
 
 export class AccessCardCreateNFTOwnerStep extends Step {
   readonly config: StepConfig = {

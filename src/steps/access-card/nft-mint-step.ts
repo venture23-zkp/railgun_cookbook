@@ -3,12 +3,12 @@ import {
   StepConfig,
   StepInput,
   UnvalidatedStepOutput,
-} from 'models';
-import { Step } from 'steps/step';
+} from '../../models';
+import { Step } from '../../steps/step';
 import { NFTTokenType } from '@railgun-community/shared-models';
-import { AccessCardERC721Contract } from 'contract/access-card/access-card-erc721-contract';
+import { AccessCardERC721Contract } from '../../contract/access-card/access-card-erc721-contract';
 
-export class AccessCardNftMintStep extends Step {
+export class AccessCardNFTMintStep extends Step {
   readonly config: StepConfig = {
     name: 'Access Card NFT Mint',
     description:

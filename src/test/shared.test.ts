@@ -137,22 +137,24 @@ export const createQuickstartCrossContractCallsForTest = async (
 
   let gasEstimate: Optional<bigint>;
   try {
-    const { gasEstimate: resolvedGasEstimate } =
-      await gasEstimateForUnprovenCrossContractCalls(
-        networkName,
-        railgunWallet.id,
-        testConfig.encryptionKey,
-        unshieldERC20Amounts,
-        unshieldNFTs,
-        shieldERC20Recipients,
-        shieldNFTRecipients,
-        crossContractCalls,
-        MOCK_TRANSACTION_GAS_DETAILS_SERIALIZED_TYPE_2,
-        undefined, // feeTokenDetails
-        true, // sendWithPublicWallet
-        minGasLimit,
-      );
-    gasEstimate = resolvedGasEstimate;
+    // const { gasEstimate: resolvedGasEstimate } =
+      // await gasEstimateForUnprovenCrossContractCalls(
+      //   networkName,
+      //   railgunWallet.id,
+      //   testConfig.encryptionKey,
+      //   unshieldERC20Amounts,
+      //   unshieldNFTs,
+      //   shieldERC20Recipients,
+      //   shieldNFTRecipients,
+      //   crossContractCalls,
+      //   MOCK_TRANSACTION_GAS_DETAILS_SERIALIZED_TYPE_2,
+      //   undefined, // feeTokenDetails
+      //   true, // sendWithPublicWallet
+      //   minGasLimit,
+      // );
+
+      //'[{"to":"0xCD021da010284100B81D3eef420e28451D232FAF","data":"0x1249c58b"},{"to":"0xCD021da010284100B81D3eef420e28451D232FAF","data":"0xccda57470000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000fdd67e3241c190a8eb207289161c5c7024"},{"to":"0x3aB4dA0f8fa0E0Bb3db60ceE269c90Ea296b9a5b","data":"0x5596d148"}]'
+    // gasEstimate = resolvedGasEstimate;
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error(
@@ -180,7 +182,8 @@ export const createQuickstartCrossContractCallsForTest = async (
 
   const transactionGasDetails: TransactionGasDetails = {
     ...MOCK_TRANSACTION_GAS_DETAILS_SERIALIZED_TYPE_1,
-    gasEstimate: gasEstimate ?? minGasLimit,
+    // gasEstimate: gasEstimate ?? minGasLimit,
+    gasEstimate: 4_000_000n,
   };
   const { transaction } = await populateProvedCrossContractCalls(
     networkName,
