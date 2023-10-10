@@ -8,7 +8,6 @@ import type {
   FunctionFragment,
   Result,
   Interface,
-  EventFragment,
   AddressLike,
   ContractRunner,
   ContractMethod,
@@ -18,51 +17,52 @@ import type {
   TypedContractEvent,
   TypedDeferredTopicFilter,
   TypedEventLog,
-  TypedLogDescription,
   TypedListener,
   TypedContractMethod,
 } from "../common";
 
 export interface AccessCardOwnerAccountInterface extends Interface {
   getFunction(
-    nameOrSignature: "call" | "init" | "nftContract" | "nftID"
+    nameOrSignature:
+      | "executeCall"
+      | "isValidSignature"
+      | "nonce"
+      | "owner"
+      | "supportsInterface"
+      | "token"
   ): FunctionFragment;
 
-  getEvent(nameOrSignatureOrTopic: "Initialized"): EventFragment;
+  encodeFunctionData(
+    functionFragment: "executeCall",
+    values: [AddressLike, BigNumberish, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "isValidSignature",
+    values: [BytesLike, BytesLike]
+  ): string;
+  encodeFunctionData(functionFragment: "nonce", values?: undefined): string;
+  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "supportsInterface",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(functionFragment: "token", values?: undefined): string;
 
-  encodeFunctionData(
-    functionFragment: "call",
-    values: [AddressLike, BytesLike, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "init",
-    values: [AddressLike, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "nftContract",
-    values?: undefined
-  ): string;
-  encodeFunctionData(functionFragment: "nftID", values?: undefined): string;
-
-  decodeFunctionResult(functionFragment: "call", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "init", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "nftContract",
+    functionFragment: "executeCall",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "nftID", data: BytesLike): Result;
-}
-
-export namespace InitializedEvent {
-  export type InputTuple = [version: BigNumberish];
-  export type OutputTuple = [version: bigint];
-  export interface OutputObject {
-    version: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
+  decodeFunctionResult(
+    functionFragment: "isValidSignature",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "nonce", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "supportsInterface",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "token", data: BytesLike): Result;
 }
 
 export interface AccessCardOwnerAccount extends BaseContract {
@@ -109,65 +109,80 @@ export interface AccessCardOwnerAccount extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
-  call: TypedContractMethod<
-    [to: AddressLike, data: BytesLike, value: BigNumberish],
-    [void],
-    "nonpayable"
+  executeCall: TypedContractMethod<
+    [to: AddressLike, value: BigNumberish, data: BytesLike],
+    [string],
+    "payable"
   >;
 
-  init: TypedContractMethod<
-    [_nftContract: AddressLike, _nftID: BigNumberish],
-    [void],
-    "nonpayable"
+  isValidSignature: TypedContractMethod<
+    [hash: BytesLike, signature: BytesLike],
+    [string],
+    "view"
   >;
 
-  nftContract: TypedContractMethod<[], [string], "view">;
+  nonce: TypedContractMethod<[], [bigint], "view">;
 
-  nftID: TypedContractMethod<[], [bigint], "view">;
+  owner: TypedContractMethod<[], [string], "view">;
+
+  supportsInterface: TypedContractMethod<
+    [interfaceId: BytesLike],
+    [boolean],
+    "view"
+  >;
+
+  token: TypedContractMethod<
+    [],
+    [
+      [bigint, string, bigint] & {
+        chainId: bigint;
+        tokenContract: string;
+        tokenId: bigint;
+      }
+    ],
+    "view"
+  >;
 
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
 
   getFunction(
-    nameOrSignature: "call"
+    nameOrSignature: "executeCall"
   ): TypedContractMethod<
-    [to: AddressLike, data: BytesLike, value: BigNumberish],
-    [void],
-    "nonpayable"
+    [to: AddressLike, value: BigNumberish, data: BytesLike],
+    [string],
+    "payable"
   >;
   getFunction(
-    nameOrSignature: "init"
+    nameOrSignature: "isValidSignature"
   ): TypedContractMethod<
-    [_nftContract: AddressLike, _nftID: BigNumberish],
-    [void],
-    "nonpayable"
+    [hash: BytesLike, signature: BytesLike],
+    [string],
+    "view"
   >;
   getFunction(
-    nameOrSignature: "nftContract"
+    nameOrSignature: "nonce"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "owner"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
-    nameOrSignature: "nftID"
-  ): TypedContractMethod<[], [bigint], "view">;
-
-  getEvent(
-    key: "Initialized"
-  ): TypedContractEvent<
-    InitializedEvent.InputTuple,
-    InitializedEvent.OutputTuple,
-    InitializedEvent.OutputObject
+    nameOrSignature: "supportsInterface"
+  ): TypedContractMethod<[interfaceId: BytesLike], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "token"
+  ): TypedContractMethod<
+    [],
+    [
+      [bigint, string, bigint] & {
+        chainId: bigint;
+        tokenContract: string;
+        tokenId: bigint;
+      }
+    ],
+    "view"
   >;
 
-  filters: {
-    "Initialized(uint8)": TypedContractEvent<
-      InitializedEvent.InputTuple,
-      InitializedEvent.OutputTuple,
-      InitializedEvent.OutputObject
-    >;
-    Initialized: TypedContractEvent<
-      InitializedEvent.InputTuple,
-      InitializedEvent.OutputTuple,
-      InitializedEvent.OutputObject
-    >;
-  };
+  filters: {};
 }

@@ -10,17 +10,25 @@ import type {
 
 const _abi = [
   {
-    anonymous: false,
     inputs: [
       {
-        indexed: false,
-        internalType: "uint8",
-        name: "version",
-        type: "uint8",
+        internalType: "uint256",
+        name: "_size",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "_start",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "_end",
+        type: "uint256",
       },
     ],
-    name: "Initialized",
-    type: "event",
+    name: "InvalidCodeAtRange",
+    type: "error",
   },
   {
     inputs: [
@@ -30,45 +38,70 @@ const _abi = [
         type: "address",
       },
       {
-        internalType: "bytes",
-        name: "data",
-        type: "bytes",
-      },
-      {
         internalType: "uint256",
         name: "value",
         type: "uint256",
       },
+      {
+        internalType: "bytes",
+        name: "data",
+        type: "bytes",
+      },
     ],
-    name: "call",
-    outputs: [],
-    stateMutability: "nonpayable",
+    name: "executeCall",
+    outputs: [
+      {
+        internalType: "bytes",
+        name: "result",
+        type: "bytes",
+      },
+    ],
+    stateMutability: "payable",
     type: "function",
   },
   {
     inputs: [
       {
-        internalType: "contract IERC721",
-        name: "_nftContract",
-        type: "address",
+        internalType: "bytes32",
+        name: "hash",
+        type: "bytes32",
       },
       {
-        internalType: "uint256",
-        name: "_nftID",
-        type: "uint256",
+        internalType: "bytes",
+        name: "signature",
+        type: "bytes",
       },
     ],
-    name: "init",
-    outputs: [],
-    stateMutability: "nonpayable",
+    name: "isValidSignature",
+    outputs: [
+      {
+        internalType: "bytes4",
+        name: "magicValue",
+        type: "bytes4",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
     inputs: [],
-    name: "nftContract",
+    name: "nonce",
     outputs: [
       {
-        internalType: "contract IERC721",
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [
+      {
+        internalType: "address",
         name: "",
         type: "address",
       },
@@ -77,12 +110,41 @@ const _abi = [
     type: "function",
   },
   {
+    inputs: [
+      {
+        internalType: "bytes4",
+        name: "interfaceId",
+        type: "bytes4",
+      },
+    ],
+    name: "supportsInterface",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "pure",
+    type: "function",
+  },
+  {
     inputs: [],
-    name: "nftID",
+    name: "token",
     outputs: [
       {
         internalType: "uint256",
-        name: "",
+        name: "chainId",
+        type: "uint256",
+      },
+      {
+        internalType: "address",
+        name: "tokenContract",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "tokenId",
         type: "uint256",
       },
     ],
