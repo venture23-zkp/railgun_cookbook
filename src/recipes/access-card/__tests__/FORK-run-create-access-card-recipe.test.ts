@@ -68,7 +68,7 @@ describe('FORK-run-access-card-recipes', function run() {
 
     const initialSupply = (await accessCardCtx.getTotalSupply())[0];
 
-    const recipeOutput = await recipe.getRecipeOutput(recipeInput, true, true);
+    const recipeOutput = await recipe.getRecipeOutput(recipeInput);
     await executeRecipeStepsAndAssertUnshieldBalances(
       recipe.config.name,
       recipeInput,
