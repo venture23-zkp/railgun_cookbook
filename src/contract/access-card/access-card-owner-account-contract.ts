@@ -18,11 +18,11 @@ export class AccessCardOwnerAccountContract {
     ) as unknown as AccessCardOwnerAccount;
   }
 
-  createCall(
+  executeCall(
     to: string,
     data: string,
     value: bigint,
   ): Promise<ContractTransaction> {
-    return this.contract.call.populateTransaction(to, data, value);
+    return this.contract.executeCall.populateTransaction(to, value, data);
   }
 }

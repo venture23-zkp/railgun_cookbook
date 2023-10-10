@@ -11,6 +11,8 @@ import ABI_GMX_VAULT from './vault/gmx/Vault.json';
 import ABI_ACCESS_CARD_ERC721 from './access-card/AccessCardERC721.json';
 import ABI_ACCESS_CARD_OWNER_ACCOUNT from './access-card/AccessCardOwnerAccount.json';
 import ABI_ACCESS_CARD_ACCOUNT_CREATOR from './access-card/AccessCardAccountCreator.json';
+import ABI_AAVE_POOL from './aave/AavePool.json';
+import ABI_ERC6551_REGISTRY from './registry/ERC6551Registry.json';
 
 export const abi = {
   token: {
@@ -38,5 +40,11 @@ export const abi = {
       glpManager: ABI_GMX_GLP_MANAGER,
       vault: ABI_GMX_VAULT,
     },
+  },
+  aave: {
+    aavePool: ABI_AAVE_POOL,
+  },
+  registry: {
+    erc6551Registry: ABI_ERC6551_REGISTRY,
   },
 } as const;

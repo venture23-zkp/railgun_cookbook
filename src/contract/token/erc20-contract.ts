@@ -34,4 +34,8 @@ export class ERC20Contract {
   balanceOf(account: string): Promise<bigint> {
     return this.contract.balanceOf(account);
   }
+
+  approve(spender: string, amount: bigint): Promise<ContractTransaction> {
+    return this.contract.approve.populateTransaction(spender, amount);
+  }
 }

@@ -106,7 +106,7 @@ export class GMXMintStakeGLPStep extends Step {
     const nftOwnedAccount = new AccessCardOwnerAccountContract(
       this.nftOwnedAccountAddress,
     );
-    const crossContractCall = await nftOwnedAccount.createCall(
+    const crossContractCall = await nftOwnedAccount.executeCall(
       mintStakeTransaction.to,
       mintStakeTransaction.data,
       mintStakeTransaction.value,

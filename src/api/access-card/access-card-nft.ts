@@ -1,10 +1,11 @@
-import { NetworkName } from '@railgun-community/shared-models';
-import { AccessCardAccountCreatorContract } from '../../contract/access-card/access-card-account-creator-contract';
+import { NETWORK_CONFIG, NetworkName } from '@railgun-community/shared-models';
 import { Provider } from 'ethers';
+import { ERC6551RegistryContract } from '../../contract/registry/erc6551-registry-contract';
 
 type AccessCardAccounts = {
   erc721: string;
-  accountCreator: string;
+  defaultAccount: string;
+  defaultRegistry: string;
 };
 
 export class AccessCardNFT {
@@ -12,8 +13,10 @@ export class AccessCardNFT {
     switch (networkName) {
       case NetworkName.Arbitrum:
         return {
+          // todo: Deploy contracts on chains
           erc721: '0xda8506735140f6c452a1359d31437c1c115e35c3',
-          accountCreator: '0xc6E48CC5F16d93873C31Fc74D7f228Cbf24e4B98',
+          defaultAccount: '0x...',
+          defaultRegistry: '0x...',
         };
       case NetworkName.Ethereum:
       case NetworkName.BNBChain:
@@ -27,7 +30,7 @@ export class AccessCardNFT {
         throw new Error('Access card NFT not supported on this network');
     }
   }
-  
+
   static supportsNetwork(networkName: NetworkName) {
     try {
       this.getAddressesForNetwork(networkName);
@@ -38,16 +41,21 @@ export class AccessCardNFT {
   }
 
   static getOwnableContractAddress(
+    registryContractAddress: string,
+    defaultAccountAddress: string,
+    nftTokenSubID: string,
     networkName: NetworkName,
-    nftAddress: string,
-    nftTokenSubID: bigint,
     provider: Provider,
   ): Promise<string> {
-    const { accountCreator } = this.getAddressesForNetwork(networkName);
-    const creator = new AccessCardAccountCreatorContract(
-      accountCreator,
+    const registryContract = new ERC6551RegistryContract(
+      registryContractAddress,
       provider,
     );
-    return creator.getAddress(nftAddress, nftTokenSubID);
+    return registryContract.getAccountContract(
+      defaultAccountAddress,
+      this.getAddressesForNetwork(networkName).erc721,
+      nftTokenSubID,
+      NETWORK_CONFIG[networkName].chain.id,
+    );
   }
 }

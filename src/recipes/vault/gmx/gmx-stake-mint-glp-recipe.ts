@@ -63,13 +63,15 @@ export class GMXMintStakeGLPRecipe extends Recipe {
     const { rewardRouterContractAddress } =
       GMX.getGMXInfoForNetwork(networkName);
 
-    const ownableContractAddress =
-      await AccessCardNFT.getOwnableContractAddress(
-        networkName,
-        accessCardNFTAddress,
-        this.nftTokenSubID,
-        this.provider,
-      );
+      // todo: Fetch ownable contract address from AccesCardNFT API.
+      const ownableContractAddress = "";
+    // const ownableContractAddress =
+    //   await AccessCardNFT.getOwnableContractAddress(
+    //     networkName,
+    //     accessCardNFTAddress,
+    //     this.nftTokenSubID,
+    //     this.provider,
+    //   );
 
     return [
       new AccessCardNFTMintStep(accessCardNFTAddress, ""),

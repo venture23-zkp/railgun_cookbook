@@ -138,8 +138,8 @@ export type RecipeRemoveLiquidityData = {
 };
 
 export type RecipeCreateAccessCard = {
-  encryptedNFTMetadata: string
-}
+  encryptedNFTMetadata: string;
+};
 
 export enum UniswapV2Fork {
   Uniswap = 'Uniswap',
@@ -151,4 +151,11 @@ export enum UniswapV2Fork {
 export type AccessCardMetadata = {
   name: string;
   description: string;
+};
+
+export type AaveV3TokenData = {
+  tokenAddress: string;
+  amount: bigint;
+  decimals: bigint;
+  isBaseToken?: boolean;
 };
