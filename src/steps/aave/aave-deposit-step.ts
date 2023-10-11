@@ -18,9 +18,13 @@ export class AaveV3DepositStep extends Step {
 
   private readonly data: AaveV3TokenData;
   private readonly ownableContractAddress: string;
-  private readonly aaveV3PoolContractAddress :string;
+  private readonly aaveV3PoolContractAddress: string;
 
-  constructor(data: AaveV3TokenData, ownableContractAddress: string, aaveV3PoolContractAddress: string) {
+  constructor(
+    data: AaveV3TokenData,
+    ownableContractAddress: string,
+    aaveV3PoolContractAddress: string,
+  ) {
     super();
     this.data = data;
     this.ownableContractAddress = ownableContractAddress;
@@ -36,21 +40,21 @@ export class AaveV3DepositStep extends Step {
       this.ownableContractAddress,
     );
 
-    const amountAfterFee = amount - amount * MOCK_SHIELD_FEE_BASIS_POINTS / 10_000n;
-
     // todo: add relayer fee
     const spentToken: RecipeERC20AmountRecipient = {
-      amount: amountAfterFee,
+      amount,
       decimals,
       tokenAddress,
       recipient: this.ownableContractAddress,
     };
 
-    const aaveV3PoolContract = new AaveV3PoolContract(this.aaveV3PoolContractAddress);
+    const aaveV3PoolContract = new AaveV3PoolContract(
+      this.aaveV3PoolContractAddress,
+    );
 
     const { data: depositCalldata } = await aaveV3PoolContract.deposit(
       tokenAddress,
-      amountAfterFee,
+      amount,
       this.ownableContractAddress,
       0n,
     );

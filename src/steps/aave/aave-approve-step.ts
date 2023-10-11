@@ -1,15 +1,13 @@
 import { AccessCardOwnerAccountContract } from '../../contract/access-card/access-card-owner-account-contract';
 import {
   AaveV3TokenData,
-  RecipeERC20AmountRecipient,
   StepConfig,
   StepInput,
   UnvalidatedStepOutput,
 } from '../../models';
 import { Step } from '../step';
 import { ERC20Contract } from '../../contract';
-import { Aave } from 'api';
-import { networkForChain } from '@railgun-community/shared-models';
+import { Aave } from '../../api';
 
 export class AaveV3ApproveStep extends Step {
   readonly config: StepConfig = {
@@ -19,17 +17,14 @@ export class AaveV3ApproveStep extends Step {
 
   private readonly data: AaveV3TokenData;
   private readonly ownableContractAddress: string;
-  private readonly aaveV3PoolContractAddress: string;
 
   constructor(
     data: AaveV3TokenData,
     ownableContractAddress: string,
-    aaveV3PoolContractAddress: string,
   ) {
     super();
     this.data = data;
     this.ownableContractAddress = ownableContractAddress;
-    this.aaveV3PoolContractAddress = aaveV3PoolContractAddress;
   }
 
   protected async getStepOutput(
@@ -41,14 +36,6 @@ export class AaveV3ApproveStep extends Step {
     const ownableContract = new AccessCardOwnerAccountContract(
       this.ownableContractAddress,
     );
-
-    // todo: add relayer fee
-    const spentToken: RecipeERC20AmountRecipient = {
-      amount,
-      decimals,
-      tokenAddress,
-      recipient: this.ownableContractAddress,
-    };
 
     const usdcContract = new ERC20Contract(tokenAddress);
     // approve AAVE Pool Contract

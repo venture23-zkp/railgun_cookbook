@@ -66,12 +66,11 @@ export class AaveV3DepositRecipe extends Recipe {
         amountAfterFee,
       ),
       new AaveV3ApproveStep(
-        this.data,
+        {...this.data, amount: amountAfterFee },
         this.ownableContractAddress,
-        this.aaveV3PoolContractAddress,
       ),
       new AaveV3DepositStep(
-        this.data,
+        { ...this.data, amount: amountAfterFee },
         this.ownableContractAddress,
         this.aaveV3PoolContractAddress,
       ),

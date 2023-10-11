@@ -10,6 +10,11 @@ type AccessCardAccounts = {
 
 export class AccessCardNFT {
   static getAddressesForNetwork(networkName: NetworkName): AccessCardAccounts {
+    return {
+      erc721: '0xCD021da010284100B81D3eef420e28451D232FAF',
+      defaultAccount: '0x85017212843d0Bcaea013DBEaBb8E6491d67BbeC',
+      defaultRegistry: '0xa56D94F9b2412A639626C11855a72024345f2E17',
+    };
     switch (networkName) {
       case NetworkName.Arbitrum:
         return {
