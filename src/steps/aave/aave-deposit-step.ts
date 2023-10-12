@@ -8,7 +8,6 @@ import {
 } from '../../models';
 import { Step } from '../step';
 import { AaveV3PoolContract } from '../../contract/aave/aave-pool-contract';
-import { MOCK_SHIELD_FEE_BASIS_POINTS } from '../../test/mocks.test';
 
 export class AaveV3DepositStep extends Step {
   readonly config: StepConfig = {

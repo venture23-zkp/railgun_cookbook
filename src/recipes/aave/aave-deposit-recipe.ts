@@ -3,10 +3,7 @@ import { AccessCardNFT } from '../../api/access-card/access-card-nft';
 import {
   AaveV3TokenData,
   RecipeConfig,
-  RecipeCreateAccessCard,
   RecipeERC20Info,
-  RecipeInput,
-  RecipeOutput,
   StepInput,
 } from '../../models';
 import { MIN_GAS_LIMIT_ANY_RECIPE } from '../../models/min-gas-limits';
@@ -14,6 +11,7 @@ import { Recipe } from '../recipe';
 import { Step, TransferERC20Step } from '../../steps';
 import { AaveV3ApproveStep, AaveV3DepositStep } from '../../steps/aave';
 import { MOCK_SHIELD_FEE_BASIS_POINTS } from '../../test/mocks.test';
+import { Aave } from '../../api';
 
 export class AaveV3DepositRecipe extends Recipe {
   readonly config: RecipeConfig = {
@@ -25,21 +23,14 @@ export class AaveV3DepositRecipe extends Recipe {
 
   private readonly data: AaveV3TokenData;
   private readonly ownableContractAddress: string;
-  private readonly aaveV3PoolContractAddress: string;
 
-  /**
-   * Recipe to transfer, approve and deposit the specified ERC20 token to Aave V3 via AC
-   * @param {string} encryptedNFTMetadata Access Card `name` encrypted with user's viewing key
-   */
   constructor(
     data: AaveV3TokenData,
     ownableContractAddress: string,
-    aaveV3PoolContractAddress: string,
   ) {
     super();
     this.data = data;
     this.ownableContractAddress = ownableContractAddress;
-    this.aaveV3PoolContractAddress = aaveV3PoolContractAddress;
   }
 
   protected supportsNetwork(networkName: NetworkName): boolean {
@@ -49,6 +40,10 @@ export class AaveV3DepositRecipe extends Recipe {
   protected async getInternalSteps(
     firstInternalStepInput: StepInput,
   ): Promise<Step[]> {
+    const {networkName} = firstInternalStepInput;
+    const { AavePoolV3: aavePoolAddress } =
+    Aave.getAaveInfoForNetwork(networkName);
+
     const transferToken: RecipeERC20Info = (({
       tokenAddress,
       decimals,
@@ -68,11 +63,12 @@ export class AaveV3DepositRecipe extends Recipe {
       new AaveV3ApproveStep(
         {...this.data, amount: amountAfterFee },
         this.ownableContractAddress,
+        aavePoolAddress
       ),
       new AaveV3DepositStep(
         { ...this.data, amount: amountAfterFee },
         this.ownableContractAddress,
-        this.aaveV3PoolContractAddress,
+        aavePoolAddress,
       ),
     ];
   }

@@ -1,11 +1,10 @@
-import {
-  NetworkName,
-} from '@railgun-community/shared-models';
+import { NetworkName } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { AaveV3ApproveStep } from '../aave-approve-step';
 import { AaveV3TokenData, StepInput } from '../../../models';
 import { testConfig } from '../../../test/test-config.test';
+import { Aave } from '../../../api';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -28,6 +27,7 @@ describe('aave-approve-step', () => {
     const step = new AaveV3ApproveStep(
       tokenData,
       ownableContractAddress,
+      Aave.getAaveInfoForNetwork(networkName).AavePoolV3,
     );
 
     const stepInput: StepInput = {
@@ -39,7 +39,9 @@ describe('aave-approve-step', () => {
     const output = await step.getValidStepOutput(stepInput);
 
     expect(output.name).to.equal('AAVEv3 Approval');
-    expect(output.description).to.equal('Approves the specified ERC20 token to Aave V3 via AC');
+    expect(output.description).to.equal(
+      'Approves the specified ERC20 token to Aave V3 via AC',
+    );
 
     expect(output.outputERC20Amounts).to.deep.equal([]);
     expect(output.outputNFTs).to.deep.equal([]);
@@ -50,6 +52,5 @@ describe('aave-approve-step', () => {
         to: ownableContractAddress,
       },
     ]);
-
   });
 });

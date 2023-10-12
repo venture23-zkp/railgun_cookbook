@@ -62,9 +62,6 @@ describe('FORK-run-aave-deposit-recipe', function run() {
       isBaseToken: false,
     };
 
-    const { AavePoolV3: aavePoolAddress } =
-      Aave.getAaveInfoForNetwork(networkName);
-
     const {
       defaultAccount: defaultAccountContract,
       defaultRegistry: defaultRegistryContract,
@@ -83,7 +80,6 @@ describe('FORK-run-aave-deposit-recipe', function run() {
     const recipe = new AaveV3DepositRecipe(
       aaveTokenData,
       ownableAccountContract,
-      aavePoolAddress,
     );
 
     const recipeInput: RecipeInput = {

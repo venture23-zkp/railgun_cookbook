@@ -7,7 +7,6 @@ import {
 } from '../../models';
 import { Step } from '../step';
 import { ERC20Contract } from '../../contract';
-import { Aave } from '../../api';
 
 export class AaveV3ApproveStep extends Step {
   readonly config: StepConfig = {
@@ -17,21 +16,23 @@ export class AaveV3ApproveStep extends Step {
 
   private readonly data: AaveV3TokenData;
   private readonly ownableContractAddress: string;
+  private readonly aaveV3PoolContractAddress: string;
 
   constructor(
     data: AaveV3TokenData,
     ownableContractAddress: string,
+    aaveV3PoolContractAddress: string
   ) {
     super();
     this.data = data;
     this.ownableContractAddress = ownableContractAddress;
+    this.aaveV3PoolContractAddress = aaveV3PoolContractAddress;
   }
 
   protected async getStepOutput(
     input: StepInput,
   ): Promise<UnvalidatedStepOutput> {
-    const { tokenAddress, amount, decimals } = this.data;
-    const { networkName } = input;
+    const { tokenAddress, amount } = this.data;
 
     const ownableContract = new AccessCardOwnerAccountContract(
       this.ownableContractAddress,
@@ -40,7 +41,7 @@ export class AaveV3ApproveStep extends Step {
     const usdcContract = new ERC20Contract(tokenAddress);
     // approve AAVE Pool Contract
     const approveCalldata = await usdcContract.approve(
-      Aave.getAaveInfoForNetwork(networkName).AavePoolV3,
+      this.aaveV3PoolContractAddress,
       amount,
     );
 
