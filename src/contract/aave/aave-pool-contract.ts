@@ -26,4 +26,16 @@ export class AaveV3PoolContract {
       referralCode,
     );
   }
+
+  async withdraw(
+    tokenAddress: string,
+    amount: bigint,
+    withdrawalAddress: string,
+  ): Promise<ContractTransaction> {
+    return this.contract.withdraw.populateTransaction(
+      tokenAddress,
+      amount,
+      withdrawalAddress,
+    );
+  }
 }

@@ -19,8 +19,7 @@ describe('update-access-card-nft-step', () => {
     AccessCardNFT.getAddressesForNetwork(networkName).erc721;
 
   it('should update nft-metadata step', async () => {
-    const encryptedNFTMetadata =
-      '3a389f3e0b09395930291029495010';
+    const encryptedNFTMetadata = '3a389f3e0b09395930291029495010';
     const nftTokenSubID = '0';
     const step = new AccessCardSetNFTMetadataStep(
       accessCardERC721Address,
@@ -44,6 +43,7 @@ describe('update-access-card-nft-step', () => {
 
     const output = await step.getValidStepOutput(stepInput);
 
+    // todo: the internal calldata will have different contract addresses for different networks
     expect(output.crossContractCalls).to.deep.equal([
       {
         data: '0x13c58d6800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000f3a389f3e0b093959302910294950100000000000000000000000000000000000',
