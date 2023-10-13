@@ -38,4 +38,34 @@ export class AaveV3PoolContract {
       withdrawalAddress,
     );
   }
+
+  async borrow(
+    tokenAddress: string,
+    amount: bigint,
+    onBehalfOf: string,
+    interestRateMode: number, // 0 or 1
+    referralCode: number,
+  ): Promise<ContractTransaction> {
+    return this.contract.borrow.populateTransaction(
+      tokenAddress,
+      amount,
+      BigInt(interestRateMode),
+      BigInt(referralCode),
+      onBehalfOf,
+    );
+  }
+
+  async repay(
+    tokenAddress: string,
+    amount: bigint,
+    onBehalfOf: string,
+    interestRateMode: number,
+  ) {
+    return this.contract.repay.populateTransaction(
+      tokenAddress,
+      amount,
+      BigInt(interestRateMode),
+      onBehalfOf,
+    );
+  }
 }

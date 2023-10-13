@@ -9,28 +9,31 @@ import {
 import { MIN_GAS_LIMIT_ANY_RECIPE } from '../../models/min-gas-limits';
 import { Recipe } from '../recipe';
 import { Step, TransferERC20Step } from '../../steps';
-import { AaveV3ApproveStep, AaveV3DepositStep } from '../../steps/aave';
+import { AaveV3ApproveStep, AaveV3RepayStep } from '../../steps/aave';
 import { MOCK_UNSHIELD_FEE_BASIS_POINTS } from '../../test/mocks.test';
 import { Aave } from '../../api';
 
-export class AaveV3DepositRecipe extends Recipe {
+export class AaveV3RepayRecipe extends Recipe {
   readonly config: RecipeConfig = {
-    name: 'Deposit ERC20 token into AAVE Pool',
+    name: 'Repays ERC20 token into AAVE Pool',
     description:
-      'Transfers, approves and deposits the specified ERC20 token to Aave V3 via AC',
+      'Transfers, approves and repays the specified ERC20 token to Aave V3 via AC',
     minGasLimit: MIN_GAS_LIMIT_ANY_RECIPE,
   };
 
   private readonly data: AaveV3TokenData;
   private readonly ownableContractAddress: string;
+  private readonly interestRepayMode: number;
 
   constructor(
     data: AaveV3TokenData,
     ownableContractAddress: string,
+    interestRepayMode: number
   ) {
     super();
     this.data = data;
     this.ownableContractAddress = ownableContractAddress;
+    this.interestRepayMode = interestRepayMode;
   }
 
   protected supportsNetwork(networkName: NetworkName): boolean {
@@ -40,7 +43,7 @@ export class AaveV3DepositRecipe extends Recipe {
   protected async getInternalSteps(
     firstInternalStepInput: StepInput,
   ): Promise<Step[]> {
-    const {networkName } = firstInternalStepInput;
+    const {networkName} = firstInternalStepInput;
     const { AavePoolV3: aavePoolAddress } =
     Aave.getAaveInfoForNetwork(networkName);
 
@@ -61,15 +64,17 @@ export class AaveV3DepositRecipe extends Recipe {
         transferToken,
         amountAfterFee,
       ),
+      // approve aaveV3 pool to spend USDC from ownableContract
       new AaveV3ApproveStep(
         {...this.data, amount: amountAfterFee },
         this.ownableContractAddress,
         aavePoolAddress
       ),
-      new AaveV3DepositStep(
+      new AaveV3RepayStep(
         { ...this.data, amount: amountAfterFee },
         this.ownableContractAddress,
         aavePoolAddress,
+        this.interestRepayMode
       ),
     ];
   }

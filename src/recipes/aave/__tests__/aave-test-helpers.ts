@@ -9,8 +9,8 @@ import {
 } from '@railgun-community/shared-models';
 import { executeRecipeStepsAndAssertUnshieldBalances } from '../../../test/common.test';
 import { AaveV3DepositRecipe } from '../aave-deposit-recipe';
-import { testConfig } from '../../../test/test-config.test';
 import { AccessCardNFT } from '../../../api';
+import { AaveV3BorrowRecipe } from '../aave-borrow-recipe';
 
 export async function createAccessCard(
   provider: JsonRpcProvider,
@@ -46,7 +46,6 @@ export async function depositTokenToAave(
   aaveTokenData: AaveV3TokenData,
   ownableAccountContract: string,
 ) {
-
   const { erc721: accessCardErc721Address } =
     AccessCardNFT.getAddressesForNetwork(networkName);
 
@@ -61,6 +60,50 @@ export async function depositTokenToAave(
         ...aaveTokenData,
       },
     ],
+    nfts: [
+      {
+        nftAddress: accessCardErc721Address,
+        amount: 1n,
+        tokenSubID: nftTokenId,
+        nftTokenType: NFTTokenType.ERC721,
+      },
+    ],
+  };
+
+  const recipeOutput = await recipe.getRecipeOutput(recipeInput);
+
+  await executeRecipeStepsAndAssertUnshieldBalances(
+    recipe.config.name,
+    recipeInput,
+    recipeOutput,
+    true,
+    true,
+  );
+}
+
+export async function borrowTokenFromAave(
+  provider: JsonRpcProvider,
+  networkName: NetworkName,
+  nftTokenId: string,
+  aaveBorrowTokenData: AaveV3TokenData,
+  ownableAccountContract: string,
+  interestRateMode: number,
+  referralCode: number,
+) {
+  const { erc721: accessCardErc721Address } =
+    AccessCardNFT.getAddressesForNetwork(networkName);
+
+  const recipe = new AaveV3BorrowRecipe(
+    aaveBorrowTokenData,
+    ownableAccountContract,
+    interestRateMode,
+    referralCode,
+  );
+
+  const recipeInput: RecipeInput = {
+    railgunAddress: MOCK_RAILGUN_WALLET_ADDRESS,
+    networkName,
+    erc20Amounts: [],
     nfts: [
       {
         nftAddress: accessCardErc721Address,
