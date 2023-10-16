@@ -62,7 +62,6 @@ export class AaveV3WithdrawStep extends Step {
       approvedSpender: undefined,
       expectedBalance: amount,
       minBalance: amount,
-      recipient: MOCK_RAILGUN_WALLET_ADDRESS,
     }
 
     return {

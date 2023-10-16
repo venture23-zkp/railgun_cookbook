@@ -43,7 +43,7 @@ export class AaveV3PoolContract {
     tokenAddress: string,
     amount: bigint,
     onBehalfOf: string,
-    interestRateMode: number, // 0 or 1
+    interestRateMode: number, // 1 or 2 
     referralCode: number,
   ): Promise<ContractTransaction> {
     return this.contract.borrow.populateTransaction(

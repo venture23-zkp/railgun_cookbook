@@ -64,7 +64,7 @@ export class AaveV3RepayStep extends Step {
       tokenAddress: tokenAddress,
       decimals: decimals,
       amount: amount,
-      recipient: this.aaveV3PoolContractAddress,
+      recipient: this.ownableContractAddress,
     };
 
     return {
