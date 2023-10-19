@@ -44,13 +44,14 @@ export const getRPCPort = (networkName: NetworkName) => {
       return 8600;
     case NetworkName.Arbitrum:
       return 8601;
+    case NetworkName.Hardhat:
+      return 8545;
     case NetworkName.BNBChain:
     case NetworkName.Polygon:
     case NetworkName.EthereumRopsten_DEPRECATED:
     case NetworkName.EthereumGoerli:
     case NetworkName.PolygonMumbai:
     case NetworkName.ArbitrumGoerli:
-    case NetworkName.Hardhat:
     case NetworkName.Railgun:
       throw new Error('No RPC setup for network');
   }

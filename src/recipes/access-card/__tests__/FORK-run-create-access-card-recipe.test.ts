@@ -1,10 +1,10 @@
 import {
-  NETWORK_CONFIG,
   NFTTokenType,
   NetworkName,
   RailgunNFTAmountRecipient,
+  TXIDVersion,
 } from '@railgun-community/shared-models';
-import { hexlify } from '@railgun-community/wallet';
+import { NFTTokenData, TokenType, balanceForNFT, hexlify } from '@railgun-community/wallet';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { RecipeInput } from '../../../models/export-models';
@@ -24,6 +24,7 @@ import {
 } from '../../../test/common.test';
 import {
   getTestProvider,
+  getTestRailgunWallet,
   getTestRailgunWallet2,
 } from '../../../test/shared.test';
 
@@ -33,7 +34,13 @@ import { AccessCardNFT } from '../../../api/access-card/access-card-nft';
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-const networkName = NetworkName.Ethereum;
+const networkName = NetworkName.Hardhat;
+
+const accessCardTokenData: NFTTokenData = {
+  tokenAddress: AccessCardNFT.getAddressesForNetwork(networkName).erc721,
+  tokenSubID: '0',
+  tokenType: TokenType.ERC721,
+}
 
 describe('FORK-run-access-card-recipes', function run() {
   //{ name: 'name 1', description: 'description 1' }
@@ -80,8 +87,11 @@ describe('FORK-run-access-card-recipes', function run() {
       true,
     );
 
+    const wallet = getTestRailgunWallet();
+    const nftBalance = await balanceForNFT(TXIDVersion.V2_PoseidonMerkle, wallet, networkName, accessCardTokenData);
     const newSupply = (await accessCardCtx.getTotalSupply())[0];
 
+    expect(nftBalance).to.equal(1n);
     expect(newSupply - initialSupply).to.equal(1n);
   });
 
@@ -184,16 +194,8 @@ describe('FORK-run-access-card-recipes', function run() {
     );
 
     const wallet2 = getTestRailgunWallet2();
-    const wallet2TreeBalance = Object.values(
-      await wallet2.balancesByTree(NETWORK_CONFIG[networkName].chain),
-    );
+    const nftBalance = await balanceForNFT(TXIDVersion.V2_PoseidonMerkle, wallet2, networkName, accessCardTokenData);
 
-    expect(wallet2TreeBalance[0][0].balance).to.equal(1n);
-    expect(wallet2TreeBalance[0][0].tokenData).to.deep.equal({
-      tokenAddress:
-        AccessCardNFT.getAddressesForNetwork(networkName).erc721.toLowerCase(),
-      tokenType: NFTTokenType.ERC721,
-      tokenSubID: hexlify(''.padStart(64, '0'), true),
-    });
+    expect(nftBalance).to.equal(1n);
   });
 });
