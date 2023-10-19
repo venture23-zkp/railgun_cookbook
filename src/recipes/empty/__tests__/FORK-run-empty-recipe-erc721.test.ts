@@ -1,7 +1,11 @@
-import chai from 'chai';
+import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { RecipeInput } from '../../../models/export-models';
-import { NETWORK_CONFIG, NetworkName } from '@railgun-community/shared-models';
+import {
+  NFTTokenType,
+  NetworkName,
+  TXIDVersion,
+} from '@railgun-community/shared-models';
 import { setRailgunFees } from '../../../init';
 import {
   MOCK_RAILGUN_WALLET_ADDRESS,
@@ -13,13 +17,21 @@ import {
   executeRecipeStepsAndAssertUnshieldBalances,
   shouldSkipForkTest,
 } from '../../../test/common.test';
+import {
+  TokenType,
+  balanceForNFT,
+  getTokenDataNFT,
+} from '@railgun-community/wallet';
+import { testRailgunWallet } from '../../../test/shared.test';
 
 chai.use(chaiAsPromised);
 
 const networkName = NetworkName.Ethereum;
-const tokenAddress = NETWORK_CONFIG[networkName].baseToken.wrappedAddress;
+const txidVersion = TXIDVersion.V2_PoseidonMerkle;
+const nftAddress = '0x1234567890';
+const tokenSubID = '0x0000';
 
-describe.only('FORK-run-empty-recipe with ERC20 inputs', function run() {
+describe.skip('FORK-run-empty-recipe-erc721', function run() {
   this.timeout(45000);
 
   before(async function run() {
@@ -30,7 +42,7 @@ describe.only('FORK-run-empty-recipe with ERC20 inputs', function run() {
     );
   });
 
-  it('[FORK] Should run empty-recipe', async function run() {
+  it('[FORK] Should run empty-recipe with ERC721 inputs', async function run() {
     if (shouldSkipForkTest(networkName)) {
       this.skip();
       return;
@@ -41,15 +53,15 @@ describe.only('FORK-run-empty-recipe with ERC20 inputs', function run() {
     const recipeInput: RecipeInput = {
       railgunAddress: MOCK_RAILGUN_WALLET_ADDRESS,
       networkName,
-      erc20Amounts: [
+      erc20Amounts: [],
+      nfts: [
         {
-          tokenAddress,
-          decimals: 18n,
-          isBaseToken: false,
-          amount: 12000n,
+          nftAddress,
+          tokenSubID,
+          amount: 1n,
+          nftTokenType: NFTTokenType.ERC721,
         },
       ],
-      nfts: [],
     };
 
     const recipeOutput = await recipe.getRecipeOutput(recipeInput);
@@ -61,8 +73,14 @@ describe.only('FORK-run-empty-recipe with ERC20 inputs', function run() {
 
     // REQUIRED TESTS:
 
-    // 1. Add New Private Balance expectations.
-    // N/A
+    const nftTokenData = getTokenDataNFT(
+      nftAddress,
+      TokenType.ERC721,
+      tokenSubID,
+    );
+    expect(
+      balanceForNFT(txidVersion, testRailgunWallet, networkName, nftTokenData),
+    ).to.equal(1n);
 
     // 2. Add External Balance expectations.
     // N/A

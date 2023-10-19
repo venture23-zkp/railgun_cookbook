@@ -1,13 +1,17 @@
 import {
   ArtifactStore,
-  Groth16,
+  NFTTokenData,
+  SnarkJSGroth16,
+  TokenType,
   balanceForERC20Token,
+  balanceForNFT,
   createRailgunWallet,
   getProver,
   loadProvider,
   populateShield,
   setLoggers,
   setOnBalanceUpdateCallback,
+  setOnUTXOMerkletreeScanCallback,
   startRailgunEngine,
   walletForID,
 } from '@railgun-community/wallet';
@@ -15,10 +19,14 @@ import LevelDOWN from 'leveldown';
 import fs from 'fs';
 import {
   FallbackProviderJsonConfig,
+  MerkletreeScanStatus,
+  MerkletreeScanUpdateEvent,
   NETWORK_CONFIG,
+  NFTTokenType,
   NetworkName,
   RailgunBalancesEvent,
   RailgunERC20AmountRecipient,
+  TXIDVersion,
   delay,
   isDefined,
   poll,
@@ -37,6 +45,7 @@ import {
 import { groth16 } from 'snarkjs';
 import { getLocalhostRPC, getRPCPort } from './common.test';
 import { getRandomShieldPrivateKey } from '../utils/random';
+import { ERC721Contract } from '../contract';
 
 const dbgRailgunSetup = debug('railgun:setup');
 
@@ -90,7 +99,7 @@ export const startRailgunForTests = () => {
     (error: string | Error) => dbgRailgunWalletSDK(error),
   );
 
-  getProver().setSnarkJSGroth16(groth16 as Groth16);
+  getProver().setSnarkJSGroth16(groth16 as SnarkJSGroth16);
 };
 
 export const loadLocalhostFallbackProviderForTests = async (
@@ -109,9 +118,37 @@ export const loadLocalhostFallbackProviderForTests = async (
     ],
   };
 
+  setOnUTXOMerkletreeScanCallback(utxoMerkletreeHistoryScanCallback);
+
   dbgRailgunSetup(`Loading provider for chain ${chainId} to RAILGUN Engine.`);
   const pollingInterval = 300;
   await loadProvider(localhostProviderConfig, networkName, pollingInterval);
+};
+
+let currentUTXOMerkletreeScanStatus: Optional<MerkletreeScanStatus>;
+export const utxoMerkletreeHistoryScanCallback = (
+  scanData: MerkletreeScanUpdateEvent,
+): void => {
+  dbgRailgunSetup(
+    `UTXO merkletree scan update: ${Math.round(scanData.progress * 100)}% [${
+      scanData.scanStatus
+    }]`,
+  );
+  currentUTXOMerkletreeScanStatus = scanData.scanStatus;
+};
+
+export const pollUntilUTXOMerkletreeScanned = async () => {
+  dbgRailgunSetup('Polling for UTXO merkletree scan to complete...');
+  const status = await poll(
+    async () => currentUTXOMerkletreeScanStatus,
+    status => status === MerkletreeScanStatus.Complete,
+    100,
+    60000 / 100, // 60 sec.
+  );
+  if (status !== MerkletreeScanStatus.Complete) {
+    throw new Error(`Merkletree scan should be completed - timed out`);
+  }
+  dbgRailgunSetup('UTXO merkletree complete');
 };
 
 export const createRailgunWalletForTests = async () => {
@@ -149,6 +186,17 @@ const approveShield = async (wallet: Wallet, tokenAddress: string) => {
   const tx = await token.createSpenderApproval(
     testConfig.contractsEthereum.proxy,
     10n ** 18n * 10000000n, // 1 MM approved
+  );
+  return sendTransactionWithRetries(wallet, tx);
+};
+
+const approveShieldERC721Collection = async (
+  wallet: Wallet,
+  nftAddress: string,
+) => {
+  const token = new ERC721Contract(nftAddress);
+  const tx = await token.createSpenderApprovalForAll(
+    testConfig.contractsEthereum.proxy,
   );
   return sendTransactionWithRetries(wallet, tx);
 };
@@ -192,6 +240,45 @@ export const shieldAllTokensForTests = async (
   dbgRailgunSetup('Shielded tokens.');
 };
 
+export const mintAndShieldERC721 = async (
+  networkName: NetworkName,
+  nftAddress: string,
+  tokenSubID: string,
+) => {
+  // TODO: Mint NFT with a specified tokenSubID.
+
+  const wallet = getTestEthersWallet();
+
+  dbgRailgunSetup('Approving NFT ERC721 for shielding...');
+
+  await approveShieldERC721Collection(wallet, nftAddress);
+
+  dbgRailgunSetup('Shielding NFT...');
+
+  const testRailgunWallet = getTestRailgunWallet();
+  const railgunAddress = testRailgunWallet.getAddress();
+
+  const shieldPrivateKey = getRandomShieldPrivateKey();
+  const { transaction } = await populateShield(
+    networkName,
+    shieldPrivateKey,
+    [], // erc20Amounts
+    [
+      {
+        nftAddress,
+        tokenSubID,
+        amount: 1n,
+        nftTokenType: NFTTokenType.ERC721,
+        recipientAddress: railgunAddress,
+      },
+    ],
+  );
+
+  await sendTransactionWithRetries(wallet, transaction);
+
+  dbgRailgunSetup('Shielded ERC721.');
+};
+
 const sendTransactionWithRetries = async (
   wallet: Wallet,
   transaction: ContractTransaction,
@@ -211,6 +298,7 @@ const sendTransactionWithRetries = async (
 };
 
 export const waitForShieldedTokenBalances = async (
+  txidVersion: TXIDVersion,
   networkName: NetworkName,
   tokenAddresses: string[],
 ) => {
@@ -228,7 +316,12 @@ export const waitForShieldedTokenBalances = async (
   ): (() => Promise<bigint>) => {
     dbgRailgunSetup(`Polling for updated token balance... ${tokenAddress}`);
     return () =>
-      balanceForERC20Token(testRailgunWallet, networkName, tokenAddress);
+      balanceForERC20Token(
+        txidVersion,
+        testRailgunWallet,
+        networkName,
+        tokenAddress,
+      );
   };
 
   await Promise.all(
@@ -245,7 +338,40 @@ export const waitForShieldedTokenBalances = async (
     }),
   );
 
-  dbgRailgunSetup('---');
   dbgRailgunSetup('Shielded token balances found. Test setup complete.');
-  dbgRailgunSetup('---');
+};
+
+export const waitForShieldedNFTBalance = async (
+  txidVersion: TXIDVersion,
+  networkName: NetworkName,
+  nftAddress: string,
+  tokenSubID: string,
+) => {
+  const onBalancesUpdate = (balancesEvent: RailgunBalancesEvent) => {
+    dbgRailgunWalletSDK('onBalancesUpdate', balancesEvent);
+  };
+  setOnBalanceUpdateCallback(onBalancesUpdate);
+
+  dbgRailgunSetup('Scanning private balances and populating test.db...');
+
+  const testRailgunWallet = getTestRailgunWallet();
+
+  const nftTokenData: NFTTokenData = {
+    tokenAddress: nftAddress,
+    tokenSubID,
+    tokenType: TokenType.ERC721,
+  };
+
+  const balance = await poll(
+    () =>
+      balanceForNFT(txidVersion, testRailgunWallet, networkName, nftTokenData),
+    balance => balance === 1n,
+    100, // Delay in MS
+    300, // Iterations - 30sec total
+  );
+  if (!isDefined(balance)) {
+    throw new Error(`Could not find shielded balance for NFT: ${nftAddress}`);
+  }
+
+  dbgRailgunSetup('Shielded NFT balance found. Test setup complete.');
 };

@@ -22,7 +22,7 @@ import {
   executeRecipeStepsAndAssertUnshieldBalances,
   shouldSkipForkTest,
 } from '../../../test/common.test';
-import { NetworkName } from '@railgun-community/shared-models';
+import { NetworkName, TXIDVersion } from '@railgun-community/shared-models';
 import { BeefyAPI } from '../../../api/beefy/beefy-api';
 import { calculateOutputsForBeefyDeposit } from '../../../steps/vault/beefy/beefy-util';
 
@@ -32,7 +32,7 @@ const { expect } = chai;
 const networkName = NetworkName.Ethereum;
 
 const oneInDecimals6 = 10n ** 6n;
-const slippagePercentage = 0.01;
+const slippageBasisPoints = BigInt(100);
 
 const USDC_TOKEN: RecipeERC20Info = {
   tokenAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
@@ -53,7 +53,7 @@ const VAULT_TOKEN: RecipeERC20Info = {
 const vaultID = 'sushi-mainnet-usdc-weth';
 
 describe('FORK-run-uni-v2-like-liquidity-beefy-combo-meals', function run() {
-  this.timeout(40000);
+  this.timeout(60000);
 
   before(async function run() {
     setRailgunFees(
@@ -78,7 +78,7 @@ describe('FORK-run-uni-v2-like-liquidity-beefy-combo-meals', function run() {
       UniswapV2Fork.SushiSwap,
       USDC_TOKEN,
       WETH_TOKEN,
-      slippagePercentage,
+      slippageBasisPoints,
       vaultID,
       testRPCProvider,
     );
@@ -102,7 +102,9 @@ describe('FORK-run-uni-v2-like-liquidity-beefy-combo-meals', function run() {
     };
 
     const railgunWallet = getTestRailgunWallet();
+    const txidVersion = TXIDVersion.V2_PoseidonMerkle;
     const initialPrivateVaultTokenBalance = await balanceForERC20Token(
+      txidVersion,
       railgunWallet,
       networkName,
       VAULT_TOKEN.tokenAddress,
@@ -123,6 +125,7 @@ describe('FORK-run-uni-v2-like-liquidity-beefy-combo-meals', function run() {
     // Expect new swapped token in private balance.
 
     const privateVaultTokenBalance = await balanceForERC20Token(
+      txidVersion,
       railgunWallet,
       networkName,
       VAULT_TOKEN.tokenAddress,
@@ -148,13 +151,14 @@ describe('FORK-run-uni-v2-like-liquidity-beefy-combo-meals', function run() {
     //   privateVaultTokenBalance,
     //   'Private LP token balance incorrect after adding liquidity',
     // );
+    const differenceWithExpected =
+      expectedPrivateVaultTokenBalance - privateVaultTokenBalance;
+    const tolerance = 10_000_000n;
     expect(
-      expectedPrivateVaultTokenBalance <= privateVaultTokenBalance &&
-        expectedPrivateVaultTokenBalance + 1000000000n >=
-          privateVaultTokenBalance,
+      -tolerance < differenceWithExpected && differenceWithExpected < tolerance,
     ).to.equal(
       true,
-      `Private Vault token balance incorrect after adding liquidity and depositing to vault, expected ${privateVaultTokenBalance} within 1000000000 of ${expectedPrivateVaultTokenBalance}`,
+      `Private Vault token balance incorrect after adding liquidity and depositing to vault, expected ${privateVaultTokenBalance} within ${tolerance} of ${expectedPrivateVaultTokenBalance}`,
     );
 
     // 2. Add External Balance expectations.

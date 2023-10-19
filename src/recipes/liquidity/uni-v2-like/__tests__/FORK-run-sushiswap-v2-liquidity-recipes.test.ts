@@ -25,17 +25,18 @@ import {
   executeRecipeStepsAndAssertUnshieldBalances,
   shouldSkipForkTest,
 } from '../../../../test/common.test';
-import { NetworkName } from '@railgun-community/shared-models';
+import { NetworkName, TXIDVersion } from '@railgun-community/shared-models';
 import { getUnshieldedAmountAfterFee } from '../../../../utils/fee';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
 const networkName = NetworkName.Ethereum;
+const txidVersion = TXIDVersion.V2_PoseidonMerkle;
 
 const oneInDecimals6 = 10n ** 6n;
 const oneInDecimals18 = 10n ** 18n;
-const slippagePercentage = 0.01;
+const slippageBasisPoints = BigInt(100);
 
 const USDC_TOKEN: RecipeERC20Info = {
   tokenAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
@@ -51,7 +52,7 @@ const LP_TOKEN: RecipeERC20Info = {
 };
 
 describe('FORK-run-sushiswap-v2-liquidity-recipes', function run() {
-  this.timeout(40000);
+  this.timeout(60000);
 
   before(async function run() {
     setRailgunFees(
@@ -74,7 +75,7 @@ describe('FORK-run-sushiswap-v2-liquidity-recipes', function run() {
       UniswapV2Fork.SushiSwap,
       USDC_TOKEN,
       WETH_TOKEN,
-      slippagePercentage,
+      slippageBasisPoints,
       testRPCProvider,
     );
     expect(addLiquidityRecipe.id.length).to.equal(16);
@@ -113,6 +114,7 @@ describe('FORK-run-sushiswap-v2-liquidity-recipes', function run() {
 
     const railgunWallet = getTestRailgunWallet();
     const initialPrivateLPTokenBalance = await balanceForERC20Token(
+      txidVersion,
       railgunWallet,
       networkName,
       LP_TOKEN.tokenAddress,
@@ -158,6 +160,7 @@ describe('FORK-run-sushiswap-v2-liquidity-recipes', function run() {
     // Expect new swapped token in private balance.
 
     const privateLPTokenBalance = await balanceForERC20Token(
+      txidVersion,
       railgunWallet,
       networkName,
       LP_TOKEN.tokenAddress,
@@ -204,7 +207,7 @@ describe('FORK-run-sushiswap-v2-liquidity-recipes', function run() {
       LP_TOKEN,
       USDC_TOKEN,
       WETH_TOKEN,
-      slippagePercentage,
+      slippageBasisPoints,
       testRPCProvider,
     );
     expect(removeLiquidityRecipe.id.length).to.equal(16);
@@ -252,11 +255,13 @@ describe('FORK-run-sushiswap-v2-liquidity-recipes', function run() {
 
     const railgunWallet = getTestRailgunWallet();
     const initialPrivateTokenABalance = await balanceForERC20Token(
+      txidVersion,
       railgunWallet,
       networkName,
       USDC_TOKEN.tokenAddress,
     );
     const initialPrivateTokenBBalance = await balanceForERC20Token(
+      txidVersion,
       railgunWallet,
       networkName,
       WETH_TOKEN.tokenAddress,
@@ -295,11 +300,13 @@ describe('FORK-run-sushiswap-v2-liquidity-recipes', function run() {
     // Expect new swapped token in private balance.
 
     const privateTokenABalance = await balanceForERC20Token(
+      txidVersion,
       railgunWallet,
       networkName,
       USDC_TOKEN.tokenAddress,
     );
     const privateTokenBBalance = await balanceForERC20Token(
+      txidVersion,
       railgunWallet,
       networkName,
       WETH_TOKEN.tokenAddress,

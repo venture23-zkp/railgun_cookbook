@@ -6,13 +6,14 @@ import {
   NETWORK_CONFIG,
   NetworkName,
   RailgunNFTAmountRecipient,
+  TXIDVersion,
   delay,
   isDefined,
 } from '@railgun-community/shared-models';
 import { RecipeInput, RecipeOutput } from '../models/export-models';
 import {
   createPrivateERC721Transfer,
-  createQuickstartCrossContractCallsForTest,
+  createCrossContractCallsForTest,
   getTestEthersWallet,
   getTestRailgunWallet,
   testRPCProvider,
@@ -76,6 +77,10 @@ export const executeRecipeStepsAndAssertUnshieldBalances = async (
   const { networkName } = recipeInput;
   const { minGasLimit } = recipeOutput;
 
+  // TODO: Add unshield assertions for ERC721 (NFT)
+
+  const txidVersion = TXIDVersion.V2_PoseidonMerkle;
+
   // Get original balances for all unshielded ERC20s.
   const preRecipeUnshieldMap: Record<
     string,
@@ -84,6 +89,7 @@ export const executeRecipeStepsAndAssertUnshieldBalances = async (
   await Promise.all(
     recipeInput.erc20Amounts.map(async ({ tokenAddress, amount }) => {
       const balance = await balanceForERC20Token(
+        txidVersion,
         railgunWallet,
         networkName,
         tokenAddress,
@@ -96,13 +102,13 @@ export const executeRecipeStepsAndAssertUnshieldBalances = async (
     }),
   );
 
-  const { gasEstimate, transaction } =
-    await createQuickstartCrossContractCallsForTest(
-      networkName,
-      recipeInput,
-      recipeOutput,
-      usePublicWallet
-    );
+  const { gasEstimate, transaction } = await createCrossContractCallsForTest(
+    txidVersion,
+    networkName,
+    recipeInput,
+    recipeOutput,
+    usePublicWallet
+  );
 
   // console.log(`gas estimate for ${recipeOutput.name}: ${gasEstimate}`);
 
@@ -221,6 +227,7 @@ export const executeRecipeStepsAndAssertUnshieldBalances = async (
       );
 
       const postBalance = await balanceForERC20Token(
+        txidVersion,
         railgunWallet,
         networkName,
         tokenAddress,
@@ -259,7 +266,10 @@ export const executePrivateNftTransfer = async (
 ) => {
   const wallet = getTestEthersWallet();
 
+  const txidVersion = TXIDVersion.V2_PoseidonMerkle;
+
   const { transaction, gasEstimate } = await createPrivateERC721Transfer(
+    txidVersion,
     networkName,
     nftAmountRecipients,
   );

@@ -13,6 +13,7 @@ import {
   RailgunERC20AmountRecipient,
   RailgunERC20Recipient,
   RailgunNFTAmountRecipient,
+  TXIDVersion,
   TransactionGasDetails,
   isDefined,
 } from '@railgun-community/shared-models';
@@ -91,7 +92,8 @@ const MOCK_TRANSACTION_GAS_DETAILS_SERIALIZED_TYPE_2: TransactionGasDetails = {
 const MOCK_RAILGUN_ADDRESS =
   '0zk1q8hxknrs97q8pjxaagwthzc0df99rzmhl2xnlxmgv9akv32sua0kfrv7j6fe3z53llhxknrs97q8pjxaagwthzc0df99rzmhl2xnlxmgv9akv32sua0kg0zpzts';
 
-export const createQuickstartCrossContractCallsForTest = async (
+export const createCrossContractCallsForTest = async (
+  txidVersion: TXIDVersion,
   networkName: NetworkName,
   recipeInput: RecipeInput,
   recipeOutput: RecipeOutput,
@@ -151,6 +153,7 @@ export const createQuickstartCrossContractCallsForTest = async (
   try {
     const { gasEstimate: resolvedGasEstimate } =
       await gasEstimateForUnprovenCrossContractCalls(
+        txidVersion,
         networkName,
         railgunWallet.id,
         testConfig.encryptionKey,
@@ -176,6 +179,7 @@ export const createQuickstartCrossContractCallsForTest = async (
   }
 
   await generateCrossContractCallsProof(
+    txidVersion,
     networkName,
     railgunWallet.id,
     testConfig.encryptionKey,
@@ -196,6 +200,7 @@ export const createQuickstartCrossContractCallsForTest = async (
     gasEstimate: gasEstimate ?? minGasLimit,
   };
   const { transaction } = await populateProvedCrossContractCalls(
+    txidVersion,
     networkName,
     railgunWallet.id,
     unshieldERC20Amounts,
@@ -213,6 +218,7 @@ export const createQuickstartCrossContractCallsForTest = async (
 };
 
 export async function createPrivateERC721Transfer(
+  txidVersion: TXIDVersion,
   networkName: NetworkName,
   nftAmountRecipients: RailgunNFTAmountRecipient[],
 ): Promise<{
@@ -233,6 +239,7 @@ export async function createPrivateERC721Transfer(
   };
 
   const { gasEstimate } = await gasEstimateForUnprovenTransfer(
+    txidVersion,
     networkName,
     railgunWallet.id,
     encryptionKey,
@@ -245,6 +252,7 @@ export async function createPrivateERC721Transfer(
   );
 
   await generateTransferProof(
+    txidVersion,
     networkName,
     railgunWallet.id,
     encryptionKey,
@@ -259,6 +267,7 @@ export async function createPrivateERC721Transfer(
   );
 
   const { transaction } = await populateProvedTransfer(
+    txidVersion,
     networkName,
     railgunWallet.id,
     true,

@@ -96,17 +96,21 @@ export class ZeroXQuote {
     networkName,
     sellERC20Amount,
     buyERC20Info,
-    slippagePercentage,
+    slippageBasisPoints,
     isRailgun,
   }: SwapQuoteParams): Promise<SwapQuoteData> => {
     if (sellERC20Amount.amount === 0n) {
       throw new Error('Swap sell amount is 0.');
     }
+
     const sellTokenAddress = this.getZeroXTokenAddress(sellERC20Amount);
     const buyTokenAddress = this.getZeroXTokenAddress(buyERC20Info);
+
     if (sellTokenAddress === buyTokenAddress) {
       throw new Error('Swap sell and buy tokens are the same.');
     }
+
+    const slippagePercentage = Number(slippageBasisPoints) / 10000;
     const params: ZeroXAPIQuoteParams = {
       sellToken: sellTokenAddress,
       buyToken: buyTokenAddress,
@@ -138,13 +142,14 @@ export class ZeroXQuote {
         sellTokenAddress,
         buyTokenAddress,
       );
+
       if (invalidError) {
         throw invalidError;
       }
 
       const minimumBuyAmount = minBalanceAfterSlippage(
         BigInt(buyAmount),
-        slippagePercentage,
+        slippageBasisPoints,
       );
       const crossContractCall: ContractTransaction = {
         to: to,
@@ -164,11 +169,12 @@ export class ZeroXQuote {
         minimumBuyAmount,
         spender,
         crossContractCall,
-        slippagePercentage,
+        slippageBasisPoints,
         sellTokenAddress: sellTokenAddressResponse,
         sellTokenValue: sellTokenValueResponse,
       };
     } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const msg = this.formatApiError(err);
       throw new Error(msg);
     }
@@ -200,7 +206,7 @@ export class ZeroXQuote {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       return `0x Exchange: ${response?.data.reason}. ${firstValidationErrorReason}.`;
     } catch {
-      return '0x API request failed.';
+      return `0x API request failed: ${err.message}.`;
     }
   };
 }

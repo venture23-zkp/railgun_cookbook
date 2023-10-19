@@ -1,8 +1,13 @@
-import { NetworkName, isDefined } from '@railgun-community/shared-models';
+import {
+  NetworkName,
+  TXIDVersion,
+  isDefined,
+} from '@railgun-community/shared-models';
 import {
   createRailgunWallet2ForTests,
   createRailgunWalletForTests,
   loadLocalhostFallbackProviderForTests,
+  pollUntilUTXOMerkletreeScanned,
   removeTestDB,
   shieldAllTokensForTests,
   startRailgunForTests,
@@ -34,8 +39,8 @@ const getTestERC20Addresses = (networkName: NetworkName): string[] => {
         testConfig.contractsEthereum.rail,
         testConfig.contractsEthereum.usdc,
         testConfig.contractsEthereum.usdcWethSushiSwapV2LPToken,
-        testConfig.contractsEthereum.steCRV,
-        testConfig.contractsEthereum.mooConvexStETH,
+        testConfig.contractsEthereum.crvUSDCWBTCWETH,
+        testConfig.contractsEthereum.mooConvexTriCryptoUSDC,
       ];
     case NetworkName.Arbitrum:
       return [testConfig.contractsArbitrum.dai];
@@ -57,6 +62,7 @@ const getSupportedNetworkNamesForTest = (): NetworkName[] => {
 
 export const setupForkTests = async () => {
   const networkName = getForkTestNetworkName();
+  const txidVersion = TXIDVersion.V2_PoseidonMerkle;
 
   if (!Object.values(NetworkName).includes(networkName)) {
     throw new Error(
@@ -82,6 +88,8 @@ export const setupForkTests = async () => {
 
   await loadLocalhostFallbackProviderForTests(networkName);
 
+  await pollUntilUTXOMerkletreeScanned();
+
   // Set up primary wallet
   await createRailgunWalletForTests();
 
@@ -92,5 +100,5 @@ export const setupForkTests = async () => {
   await shieldAllTokensForTests(networkName, tokenAddresses);
 
   // Make sure shielded balances are updated
-  await waitForShieldedTokenBalances(networkName, tokenAddresses);
+  await waitForShieldedTokenBalances(txidVersion, networkName, tokenAddresses);
 };
