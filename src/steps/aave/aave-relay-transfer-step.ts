@@ -8,9 +8,8 @@ import {
 import { Step } from '../step';
 import { ERC20Contract } from '../../contract';
 import { NETWORK_CONFIG } from '@railgun-community/shared-models';
-import { TransferERC20Step } from '../../steps/token';
 
-export class AaveV3TransferStep extends Step {
+export class AaveV3TransferToRelayStep extends Step {
   readonly config: StepConfig = {
     name: 'AAVEv3 ERC20 Transfer',
     description: 'Transfers the specified ERC20 token from Account Contract(AC) to Relay Adapt',

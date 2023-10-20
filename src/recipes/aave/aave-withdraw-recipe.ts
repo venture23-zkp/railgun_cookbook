@@ -9,7 +9,7 @@ import { MIN_GAS_LIMIT_ANY_RECIPE } from '../../models/min-gas-limits';
 import { Recipe } from '../recipe';
 import { Step } from '../../steps';
 import { AaveV3WithdrawStep } from '../../steps/aave/aave-withdraw-step';
-import { AaveV3TransferStep } from '../../steps/aave/aave-transfer-step';
+import { AaveV3TransferToRelayStep } from '../../steps/aave/aave-relay-transfer-step';
 import { Aave } from '../../api';
 
 export class AaveV3WithdrawRecipe extends Recipe {
@@ -46,7 +46,7 @@ export class AaveV3WithdrawRecipe extends Recipe {
         this.ownableContractAddress,
         aaveV3PoolContractAddress,
       ),
-      new AaveV3TransferStep(
+      new AaveV3TransferToRelayStep(
         this.data,
         this.ownableContractAddress,
       ),

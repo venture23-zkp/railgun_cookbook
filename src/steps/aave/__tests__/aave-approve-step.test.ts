@@ -5,6 +5,8 @@ import { AaveV3ApproveStep } from '../aave-approve-step';
 import { AaveV3TokenData, StepInput } from '../../../models';
 import { testConfig } from '../../../test/test-config.test';
 import { Aave } from '../../../api';
+import { decodeCalldata } from '../../../utils/decoder';
+import { ethers } from 'ethers';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -38,6 +40,16 @@ describe('aave-approve-step', () => {
 
     const output = await step.getValidStepOutput(stepInput);
 
+    const decodedExecuteCalldata = decodeCalldata(
+      ['address', 'uint256', 'bytes'],
+      output.crossContractCalls[0].data,
+    );
+
+    const decodedApprovalCalldata = decodeCalldata(
+      ['address', 'uint256'],
+      decodedExecuteCalldata[2],
+    );
+
     expect(output.name).to.equal('AAVEv3 Approval');
     expect(output.description).to.equal(
       'Approves the specified ERC20 token to Aave V3 via AC',
@@ -46,11 +58,12 @@ describe('aave-approve-step', () => {
     expect(output.outputERC20Amounts).to.deep.equal([]);
     expect(output.outputNFTs).to.deep.equal([]);
 
-    expect(output.crossContractCalls).to.deep.equal([
-      {
-        data: '0x9e5d4c49000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000044095ea7b300000000000000000000000087870bca3f3fd6335c3f4ce8392d69350b4fa4e2000000000000000000000000000000000000000000000000000000000098968000000000000000000000000000000000000000000000000000000000',
-        to: ownableContractAddress,
-      },
-    ]);
+    expect(ethers.getAddress(decodedExecuteCalldata[0])).to.equal(
+      ethers.getAddress(testConfig.contractsEthereum.usdc),
+    );
+    expect(ethers.getAddress(decodedApprovalCalldata[0])).to.equal(
+      ethers.getAddress(Aave.getAaveInfoForNetwork(networkName).AavePoolV3),
+    );
+    expect(decodedApprovalCalldata[1]).to.equal(usdcAmount);
   });
 });

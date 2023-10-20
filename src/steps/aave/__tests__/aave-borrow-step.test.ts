@@ -5,7 +5,8 @@ import { AaveV3BorrowStep } from '../aave-borrow-step';
 import { Aave } from '../../../api';
 import { AaveV3TokenData, StepInput } from '../../../models';
 import { testConfig } from '../../../test/test-config.test';
-import { MOCK_RAILGUN_WALLET_ADDRESS } from '../../../test/mocks.test';
+import { decodeCalldata } from '../../../utils/decoder';
+import { ethers } from 'ethers';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -33,8 +34,8 @@ describe('aave-borrow-step', () => {
       aaveTokenData,
       ownableAccountContractAddress,
       aaveV3PoolAddress,
-      interestRateMode, 
-      0
+      interestRateMode,
+      0,
     );
 
     const stepInput: StepInput = {
@@ -45,21 +46,41 @@ describe('aave-borrow-step', () => {
 
     const output = await step.getValidStepOutput(stepInput);
 
-    // todo: the internal calldata will have different contract addresses for different networks
-    expect(output.crossContractCalls).to.deep.equal([
-      {
-        data: '0x9e5d4c4900000000000000000000000087870bca3f3fd6335c3f4ce8392d69350b4fa4e20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a4a415bcad000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000000000000000000000000000000000000000002710000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000004b43618d599daa14d1573c39dae0a4e094cc64e500000000000000000000000000000000000000000000000000000000',
-        to: ownableAccountContractAddress,
-      },
+    const decodedExecuteCalldata = decodeCalldata(
+      ['address', 'uint256', 'bytes'],
+      output.crossContractCalls[0].data,
+    );
+
+    const decodedBorrowCalldata = decodeCalldata(
+      ['address', 'uint256', 'uint256', 'uint16', 'address'],
+      decodedExecuteCalldata[2],
+    );
+
+    expect(output.name).to.equal('AAVEv3 Borrow');
+    expect(output.description).to.equal(
+      'Borrows the specified ERC20 token from Aave V3 via AC',
+    );
+
+    expect(ethers.getAddress(decodedExecuteCalldata[0])).to.equal(
+      ethers.getAddress(Aave.getAaveInfoForNetwork(networkName).AavePoolV3),
+    );
+    expect(decodedBorrowCalldata).to.deep.equal([
+      ethers.getAddress(testConfig.contractsEthereum.usdc),
+      amount,
+      BigInt(interestRateMode),
+      BigInt(0),
+      ethers.getAddress(ownableAccountContractAddress),
     ]);
 
-    expect(output.outputERC20Amounts).to.deep.equal([{
-      approvedSpender: undefined,
-      decimals: aaveTokenData.decimals,
-      expectedBalance: aaveTokenData.amount,
-      minBalance: aaveTokenData.amount,
-      tokenAddress: testConfig.contractsEthereum.usdc,
-    }]);
+    expect(output.outputERC20Amounts).to.deep.equal([
+      {
+        approvedSpender: undefined,
+        decimals: aaveTokenData.decimals,
+        expectedBalance: aaveTokenData.amount,
+        minBalance: aaveTokenData.amount,
+        tokenAddress: testConfig.contractsEthereum.usdc,
+      },
+    ]);
 
     expect(output.outputNFTs.length).to.equal(0);
   });

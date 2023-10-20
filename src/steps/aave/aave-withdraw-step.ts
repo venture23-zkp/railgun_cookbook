@@ -8,7 +8,6 @@ import {
 } from '../../models';
 import { Step } from '../step';
 import { AaveV3PoolContract } from '../../contract/aave/aave-pool-contract';
-import { MOCK_RAILGUN_WALLET_ADDRESS } from '../../test/mocks.test';
 
 export class AaveV3WithdrawStep extends Step {
   readonly config: StepConfig = {

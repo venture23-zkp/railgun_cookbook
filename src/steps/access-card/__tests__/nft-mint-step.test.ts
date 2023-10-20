@@ -30,7 +30,6 @@ describe('mint-access-card-nft-step', () => {
 
     const output = await step.getValidStepOutput(stepInput);
 
-    // todo: the internal calldata will have different contract addresses for different networks
     expect(output.crossContractCalls).to.deep.equal([
       {
         data: '0x7ba0e2e70000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001d4d594d3e82f43d8e97bb70cb9c6d4a3e2f57a1f43966a4017fdbeae708000000',

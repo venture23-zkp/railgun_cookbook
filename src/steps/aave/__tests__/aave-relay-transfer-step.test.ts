@@ -1,8 +1,7 @@
-import { NetworkName } from '@railgun-community/shared-models';
+import { NETWORK_CONFIG, NetworkName } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { AaveV3WithdrawStep } from '../aave-withdraw-step';
-import { Aave } from '../../../api';
+import { AaveV3TransferToRelayStep } from '../aave-relay-transfer-step';
 import { AaveV3TokenData, StepInput } from '../../../models';
 import { testConfig } from '../../../test/test-config.test';
 import { decodeCalldata } from '../../../utils/decoder';
@@ -13,11 +12,8 @@ const { expect } = chai;
 
 const networkName = NetworkName.Ethereum;
 
-describe('aave-withdraw-step', () => {
-  it('should create aave-withdraw-step', async () => {
-    const { AavePoolV3: aaveV3PoolAddress } =
-      Aave.getAaveInfoForNetwork(networkName);
-
+describe('aave-relay-transfer-step', () => {
+  it('should create aave-relay-transfer-step', async () => {
     const amount = 10_000n;
 
     const aaveTokenData: AaveV3TokenData = {
@@ -29,10 +25,9 @@ describe('aave-withdraw-step', () => {
     const ownableAccountContractAddress =
       '0x4b43618d599daa14d1573c39dae0a4e094cc64e5'; // random address
 
-    const step = new AaveV3WithdrawStep(
+    const step = new AaveV3TransferToRelayStep(
       aaveTokenData,
       ownableAccountContractAddress,
-      aaveV3PoolAddress,
     );
 
     const stepInput: StepInput = {
@@ -48,28 +43,20 @@ describe('aave-withdraw-step', () => {
       output.crossContractCalls[0].data,
     );
 
-    const decodedWithdrawCalldata = decodeCalldata(
-      ['address', 'uint256', 'address'],
+    const decodedTransferCalldata = decodeCalldata(
+      ['address', 'uint256'],
       decodedExecuteCalldata[2],
     );
 
     expect(decodedExecuteCalldata[0]).to.equal(
-      ethers.getAddress(Aave.getAaveInfoForNetwork(networkName).AavePoolV3),
-    );
-    expect(decodedWithdrawCalldata).to.deep.equal([
       ethers.getAddress(aaveTokenData.tokenAddress),
+    );
+    expect(decodedTransferCalldata).to.deep.equal([
+      ethers.getAddress(NETWORK_CONFIG[networkName].relayAdaptContract),
       amount,
-      ethers.getAddress(ownableAccountContractAddress),
     ]);
 
-    expect(output.outputERC20Amounts).to.deep.equal([{
-      approvedSpender: undefined,
-      decimals: aaveTokenData.decimals,
-      expectedBalance: aaveTokenData.amount,
-      minBalance: aaveTokenData.amount,
-      tokenAddress: testConfig.contractsEthereum.usdc,
-    }]);
-
+    expect(output.outputERC20Amounts.length).to.equal(0);
     expect(output.outputNFTs.length).to.equal(0);
   });
 });
