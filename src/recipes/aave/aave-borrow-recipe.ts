@@ -1,10 +1,6 @@
 import { NetworkName } from '@railgun-community/shared-models';
 import { AccessCardNFT } from '../../api/access-card/access-card-nft';
-import {
-  AaveV3TokenData,
-  RecipeConfig,
-  StepInput,
-} from '../../models';
+import { AaveV3TokenData, RecipeConfig, StepInput } from '../../models';
 import { MIN_GAS_LIMIT_ANY_RECIPE } from '../../models/min-gas-limits';
 import { Recipe } from '../recipe';
 import { Step } from '../../steps';
@@ -24,13 +20,21 @@ export class AaveV3BorrowRecipe extends Recipe {
   private readonly ownableContractAddress: string;
   private readonly interestRateMode: number;
   private readonly referralCode: number;
+  private readonly borrowAmount: bigint;
 
-  constructor(data: AaveV3TokenData, ownableContractAddress: string, interestRateMode: number, referralCode: number) {
+  constructor(
+    data: AaveV3TokenData,
+    ownableContractAddress: string,
+    borrowAmount: bigint,
+    interestRateMode: number,
+    referralCode: number,
+  ) {
     super();
     this.data = data;
     this.ownableContractAddress = ownableContractAddress;
     this.interestRateMode = interestRateMode;
-    this.referralCode = referralCode
+    this.referralCode = referralCode;
+    this.borrowAmount = borrowAmount;
   }
 
   protected supportsNetwork(networkName: NetworkName): boolean {
@@ -49,13 +53,11 @@ export class AaveV3BorrowRecipe extends Recipe {
         this.data,
         this.ownableContractAddress,
         aaveV3PoolContractAddress,
+        this.borrowAmount,
         this.interestRateMode,
         this.referralCode,
       ),
-      new AaveV3TransferToRelayStep(
-        this.data,
-        this.ownableContractAddress,
-      ),
+      new AaveV3TransferToRelayStep(this.data, this.ownableContractAddress),
     ];
   }
 }

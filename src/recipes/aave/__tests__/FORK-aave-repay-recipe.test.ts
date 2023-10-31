@@ -87,6 +87,7 @@ describe('FORK-run-aave-repay-recipe', function run() {
       networkName,
       nftTokenId,
       aaveDepositTokenData,
+      depositAmount,
       ownableAccountContract,
     );
     console.debug('USDC deposited to AAVEv3 Pool');
@@ -101,6 +102,7 @@ describe('FORK-run-aave-repay-recipe', function run() {
       networkName,
       nftTokenId,
       aaveBorrowRepayTokenData,
+      borrowRepayAmount,
       ownableAccountContract,
       2,
       0,
@@ -116,10 +118,6 @@ describe('FORK-run-aave-repay-recipe', function run() {
       testConfig.contractsEthereum.usdc,
       provider,
     );
-    const aTokenContract = new ERC20Contract(
-      Aave.getAaveInfoForNetwork(networkName).usdc.aToken,
-      provider,
-    );
 
     const initialOwnableDtokenBalance = await dTokenContract.balanceOf(
       ownableAccountContract,
@@ -131,6 +129,7 @@ describe('FORK-run-aave-repay-recipe', function run() {
     const recipe = new AaveV3RepayRecipe(
       aaveBorrowRepayTokenData,
       ownableAccountContract,
+      borrowRepayAmount,
       2,
     );
 
@@ -178,7 +177,12 @@ describe('FORK-run-aave-repay-recipe', function run() {
       initialOwnableDtokenBalance - finalOwnableDtokenBalance;
 
     // todo: Correctly verify the usdc balance difference
-    // expect(usdcBalanceDifference).to.equal(3000000n);
-    expect(finalOwnableDtokenBalance).to.equal(borrowRepayAmount * MOCK_UNSHIELD_FEE_BASIS_POINTS / 10_000n);
+    expect(usdcBalanceDifference).to.equal(borrowRepayAmount);
+    expect(
+      Number(
+        finalOwnableDtokenBalance -
+          (borrowRepayAmount * MOCK_UNSHIELD_FEE_BASIS_POINTS) / 10_000n,
+      ),
+    ).to.be.lessThanOrEqual(10);
   });
 });

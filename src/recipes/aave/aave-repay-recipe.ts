@@ -10,8 +10,8 @@ import { MIN_GAS_LIMIT_ANY_RECIPE } from '../../models/min-gas-limits';
 import { Recipe } from '../recipe';
 import { Step, TransferERC20Step } from '../../steps';
 import { AaveV3ApproveStep, AaveV3RepayStep } from '../../steps/aave';
-import { MOCK_UNSHIELD_FEE_BASIS_POINTS } from '../../test/mocks.test';
 import { Aave } from '../../api';
+import { getUnshieldedAmountAfterFee } from '../../utils/fee';
 
 export class AaveV3RepayRecipe extends Recipe {
   readonly config: RecipeConfig = {
@@ -24,16 +24,19 @@ export class AaveV3RepayRecipe extends Recipe {
   private readonly data: AaveV3TokenData;
   private readonly ownableContractAddress: string;
   private readonly interestRepayMode: number;
+  private readonly repayAmount: bigint;
 
   constructor(
     data: AaveV3TokenData,
     ownableContractAddress: string,
-    interestRepayMode: number
+    repayAmount: bigint,
+    interestRepayMode: number,
   ) {
     super();
     this.data = data;
     this.ownableContractAddress = ownableContractAddress;
     this.interestRepayMode = interestRepayMode;
+    this.repayAmount = repayAmount;
   }
 
   protected supportsNetwork(networkName: NetworkName): boolean {
@@ -43,9 +46,9 @@ export class AaveV3RepayRecipe extends Recipe {
   protected async getInternalSteps(
     firstInternalStepInput: StepInput,
   ): Promise<Step[]> {
-    const {networkName} = firstInternalStepInput;
+    const { networkName } = firstInternalStepInput;
     const { AavePoolV3: aavePoolAddress } =
-    Aave.getAaveInfoForNetwork(networkName);
+      Aave.getAaveInfoForNetwork(networkName);
 
     const transferToken: RecipeERC20Info = (({
       tokenAddress,
@@ -53,10 +56,10 @@ export class AaveV3RepayRecipe extends Recipe {
       isBaseToken,
     }) => ({ tokenAddress, decimals, isBaseToken }))(this.data);
 
-    // todo: This is a bug. Don't use test variables in recipes.
-    const amountAfterFee =
-      this.data.amount -
-      (this.data.amount * MOCK_UNSHIELD_FEE_BASIS_POINTS) / 10_000n;
+    const amountAfterFee = getUnshieldedAmountAfterFee(
+      networkName,
+      this.repayAmount,
+    );
 
     return [
       new TransferERC20Step(
@@ -66,15 +69,16 @@ export class AaveV3RepayRecipe extends Recipe {
       ),
       // approve aaveV3 pool to spend USDC from ownableContract
       new AaveV3ApproveStep(
-        {...this.data, amount: amountAfterFee },
-        this.ownableContractAddress,
-        aavePoolAddress
-      ),
-      new AaveV3RepayStep(
-        { ...this.data, amount: amountAfterFee },
+        { ...this.data, amount: undefined },
         this.ownableContractAddress,
         aavePoolAddress,
-        this.interestRepayMode
+        amountAfterFee,
+      ),
+      new AaveV3RepayStep(
+        { ...this.data, amount: undefined },
+        this.ownableContractAddress,
+        aavePoolAddress,
+        this.interestRepayMode,
       ),
     ];
   }

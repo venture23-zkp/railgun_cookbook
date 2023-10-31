@@ -22,7 +22,8 @@ describe('aave-deposit-step', () => {
 
     const tokenData: AaveV3TokenData = {
       tokenAddress: testConfig.contractsEthereum.usdc,
-      amount: usdcAmount,
+      // amount should be taken as input from previous step output
+      amount: undefined,
       decimals: 6n,
       isBaseToken: false,
     };
@@ -35,7 +36,15 @@ describe('aave-deposit-step', () => {
 
     const stepInput: StepInput = {
       networkName,
-      erc20Amounts: [],
+      erc20Amounts: [
+        {
+          expectedBalance: usdcAmount,
+          minBalance: usdcAmount,
+          tokenAddress: tokenData.tokenAddress,
+          decimals: tokenData.decimals,
+          approvedSpender: undefined,
+        },
+      ],
       nfts: [],
     };
 

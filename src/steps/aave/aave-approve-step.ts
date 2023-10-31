@@ -3,6 +3,7 @@ import {
   AaveV3TokenData,
   StepConfig,
   StepInput,
+  StepOutputERC20Amount,
   UnvalidatedStepOutput,
 } from '../../models';
 import { Step } from '../step';
@@ -17,32 +18,35 @@ export class AaveV3ApproveStep extends Step {
   private readonly data: AaveV3TokenData;
   private readonly ownableContractAddress: string;
   private readonly aaveV3PoolContractAddress: string;
+  private readonly amount: bigint;
 
   constructor(
     data: AaveV3TokenData,
     ownableContractAddress: string,
-    aaveV3PoolContractAddress: string
+    aaveV3PoolContractAddress: string,
+    amount: bigint,
   ) {
     super();
     this.data = data;
     this.ownableContractAddress = ownableContractAddress;
     this.aaveV3PoolContractAddress = aaveV3PoolContractAddress;
+    this.amount = amount;
   }
 
   protected async getStepOutput(
     input: StepInput,
   ): Promise<UnvalidatedStepOutput> {
-    const { tokenAddress, amount } = this.data;
+    const { tokenAddress } = this.data;
 
     const ownableContract = new AccessCardOwnerAccountContract(
       this.ownableContractAddress,
     );
 
-    const usdcContract = new ERC20Contract(tokenAddress);
+    const tokenContract = new ERC20Contract(tokenAddress);
     // approve AAVE Pool Contract
-    const approveCalldata = await usdcContract.approve(
+    const approveCalldata = await tokenContract.approve(
       this.aaveV3PoolContractAddress,
-      amount,
+      this.amount,
     );
 
     // approve USDC for AAVE pool contract
@@ -52,9 +56,18 @@ export class AaveV3ApproveStep extends Step {
       0n,
     );
 
+    const approvedERC20Amount: StepOutputERC20Amount = {
+      tokenAddress: this.data.tokenAddress,
+      decimals: this.data.decimals,
+      isBaseToken: this.data.isBaseToken,
+      expectedBalance: this.amount,
+      minBalance: this.amount,
+      approvedSpender: this.aaveV3PoolContractAddress,
+    };
+
     return {
       crossContractCalls: [approveTransaction],
-      outputERC20Amounts: [...input.erc20Amounts],
+      outputERC20Amounts: [approvedERC20Amount, ...input.erc20Amounts],
       outputNFTs: [...input.nfts],
     };
   }

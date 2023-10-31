@@ -34,6 +34,7 @@ describe('aave-borrow-step', () => {
       aaveTokenData,
       ownableAccountContractAddress,
       aaveV3PoolAddress,
+      amount,
       interestRateMode,
       0,
     );

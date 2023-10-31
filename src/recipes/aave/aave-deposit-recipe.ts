@@ -10,8 +10,8 @@ import { MIN_GAS_LIMIT_ANY_RECIPE } from '../../models/min-gas-limits';
 import { Recipe } from '../recipe';
 import { Step, TransferERC20Step } from '../../steps';
 import { AaveV3ApproveStep, AaveV3DepositStep } from '../../steps/aave';
-import { MOCK_UNSHIELD_FEE_BASIS_POINTS } from '../../test/mocks.test';
 import { Aave } from '../../api';
+import { getUnshieldedAmountAfterFee } from '../../utils/fee';
 
 export class AaveV3DepositRecipe extends Recipe {
   readonly config: RecipeConfig = {
@@ -23,14 +23,17 @@ export class AaveV3DepositRecipe extends Recipe {
 
   private readonly data: AaveV3TokenData;
   private readonly ownableContractAddress: string;
+  private readonly depositAmount: bigint;
 
   constructor(
     data: AaveV3TokenData,
     ownableContractAddress: string,
+    depositAmount: bigint,
   ) {
     super();
     this.data = data;
     this.ownableContractAddress = ownableContractAddress;
+    this.depositAmount = depositAmount;
   }
 
   protected supportsNetwork(networkName: NetworkName): boolean {
@@ -40,34 +43,35 @@ export class AaveV3DepositRecipe extends Recipe {
   protected async getInternalSteps(
     firstInternalStepInput: StepInput,
   ): Promise<Step[]> {
-    const {networkName } = firstInternalStepInput;
+    const { networkName } = firstInternalStepInput;
     const { AavePoolV3: aavePoolAddress } =
-    Aave.getAaveInfoForNetwork(networkName);
+      Aave.getAaveInfoForNetwork(networkName);
 
-    const transferToken: RecipeERC20Info = (({
+    const depositToken: RecipeERC20Info = (({
       tokenAddress,
       decimals,
       isBaseToken,
     }) => ({ tokenAddress, decimals, isBaseToken }))(this.data);
 
-    // todo: This is a bug. Don't use test variables in recipes.
-    const amountAfterFee =
-      this.data.amount -
-      (this.data.amount * MOCK_UNSHIELD_FEE_BASIS_POINTS) / 10_000n;
+    const amountAfterFee = getUnshieldedAmountAfterFee(
+      networkName,
+      this.depositAmount,
+    );
 
     return [
       new TransferERC20Step(
         this.ownableContractAddress,
-        transferToken,
+        depositToken,
         amountAfterFee,
       ),
       new AaveV3ApproveStep(
-        {...this.data, amount: amountAfterFee },
+        { ...this.data, amount: undefined },
         this.ownableContractAddress,
-        aavePoolAddress
+        aavePoolAddress,
+        amountAfterFee
       ),
       new AaveV3DepositStep(
-        { ...this.data, amount: amountAfterFee },
+        {...this.data, amount: undefined},
         this.ownableContractAddress,
         aavePoolAddress,
       ),

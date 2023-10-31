@@ -91,6 +91,7 @@ describe('FORK-run-aave-withdraw-recipe', function run() {
       networkName,
       nftTokenId,
       aaveDepositTokenData,
+      withdrawAmount,
       ownableAccountContract,
     );
     console.debug('ERC20 deposited to AAVEv3 Pool');
@@ -99,6 +100,7 @@ describe('FORK-run-aave-withdraw-recipe', function run() {
     const recipe = new AaveV3WithdrawRecipe(
       aaveWithdrawTokenData,
       ownableAccountContract,
+      withdrawAmountAfterDepositFee,
     );
 
     const recipeInput: RecipeInput = {

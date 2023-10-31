@@ -89,6 +89,7 @@ describe('FORK-run-aave-borrow-recipe', function run() {
       networkName,
       nftTokenId,
       aaveDepositTokenData,
+      depositAmount,
       ownableAccountContract,
     );
     console.debug('ERC20 deposited to AAVEv3 Pool');
@@ -97,6 +98,7 @@ describe('FORK-run-aave-borrow-recipe', function run() {
     const recipe = new AaveV3BorrowRecipe(
       aaveBorrowTokenData,
       ownableAccountContract,
+      borrowAmount,
       2,
       0,
     );

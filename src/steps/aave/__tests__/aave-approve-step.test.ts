@@ -30,6 +30,7 @@ describe('aave-approve-step', () => {
       tokenData,
       ownableContractAddress,
       Aave.getAaveInfoForNetwork(networkName).AavePoolV3,
+      usdcAmount,
     );
 
     const stepInput: StepInput = {
@@ -55,7 +56,16 @@ describe('aave-approve-step', () => {
       'Approves the specified ERC20 token to Aave V3 via AC',
     );
 
-    expect(output.outputERC20Amounts).to.deep.equal([]);
+    expect(output.outputERC20Amounts).to.deep.equal([
+      {
+        approvedSpender: Aave.getAaveInfoForNetwork(networkName).AavePoolV3,
+        decimals: tokenData.decimals,
+        expectedBalance: usdcAmount,
+        isBaseToken: tokenData.isBaseToken,
+        minBalance: usdcAmount,
+        tokenAddress: tokenData.tokenAddress,
+      },
+    ]);
     expect(output.outputNFTs).to.deep.equal([]);
 
     expect(ethers.getAddress(decodedExecuteCalldata[0])).to.equal(

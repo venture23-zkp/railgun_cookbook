@@ -12,15 +12,18 @@ import { AaveV3PoolContract } from '../../contract/aave/aave-pool-contract';
 export class AaveV3WithdrawStep extends Step {
   readonly config: StepConfig = {
     name: 'AAVEv3 Withdraw',
-    description: 'Withdraws the specified ERC20 token from Aave V3 to Account Contract(AC)',
+    description:
+      'Withdraws the specified ERC20 token from Aave V3 to Account Contract(AC)',
   };
 
   private readonly data: AaveV3TokenData;
   private readonly ownableContractAddress: string;
   private readonly aaveV3PoolContractAddress: string;
+  private readonly withdrawAmount: bigint;
 
   constructor(
     data: AaveV3TokenData,
+    withdrawAmount: bigint,
     ownableContractAddress: string,
     aaveV3PoolContractAddress: string,
   ) {
@@ -28,12 +31,13 @@ export class AaveV3WithdrawStep extends Step {
     this.data = data;
     this.ownableContractAddress = ownableContractAddress;
     this.aaveV3PoolContractAddress = aaveV3PoolContractAddress;
+    this.withdrawAmount = withdrawAmount;
   }
 
   protected async getStepOutput(
     input: StepInput,
   ): Promise<UnvalidatedStepOutput> {
-    const { tokenAddress, amount, decimals } = this.data;
+    const { tokenAddress, decimals } = this.data;
 
     const ownableContract = new AccessCardOwnerAccountContract(
       this.ownableContractAddress,
@@ -45,7 +49,7 @@ export class AaveV3WithdrawStep extends Step {
 
     const { data: withdrawCalldata } = await aaveV3PoolContract.withdraw(
       tokenAddress,
-      amount,
+      this.withdrawAmount,
       this.ownableContractAddress,
     );
 
@@ -55,19 +59,18 @@ export class AaveV3WithdrawStep extends Step {
       0n,
     );
 
-    const outputErc20Tokens: StepOutputERC20Amount = {
+    const withdrawnToken: StepOutputERC20Amount = {
       tokenAddress,
       decimals,
       approvedSpender: undefined,
-      expectedBalance: amount,
-      minBalance: amount,
-    }
+      expectedBalance: this.withdrawAmount,
+      minBalance: this.withdrawAmount,
+    };
 
     return {
       crossContractCalls: [withdrawTransaction],
-      outputERC20Amounts: [...input.erc20Amounts, outputErc20Tokens],
+      outputERC20Amounts: [withdrawnToken, ...input.erc20Amounts],
       outputNFTs: [...input.nfts],
-      spentERC20Amounts: [],
     };
   }
 }

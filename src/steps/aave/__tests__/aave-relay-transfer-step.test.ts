@@ -32,7 +32,15 @@ describe('aave-relay-transfer-step', () => {
 
     const stepInput: StepInput = {
       networkName,
-      erc20Amounts: [],
+      erc20Amounts: [
+        {
+          tokenAddress: aaveTokenData.tokenAddress,
+          decimals: aaveTokenData.decimals,
+          expectedBalance: amount,
+          minBalance: amount,
+          approvedSpender: undefined,
+        },
+      ],
       nfts: [],
     };
 
@@ -58,5 +66,13 @@ describe('aave-relay-transfer-step', () => {
 
     expect(output.outputERC20Amounts.length).to.equal(0);
     expect(output.outputNFTs.length).to.equal(0);
+    expect(output.spentERC20Amounts).to.deep.equal([
+      {
+        tokenAddress: aaveTokenData.tokenAddress,
+        decimals: aaveTokenData.decimals,
+        amount,
+        recipient: NETWORK_CONFIG[networkName].relayAdaptContract,
+      },
+    ]);
   });
 });

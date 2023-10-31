@@ -44,12 +44,13 @@ export async function depositTokenToAave(
   networkName: NetworkName,
   nftTokenId: string,
   aaveTokenData: AaveV3TokenData,
+  depositAmount: bigint,
   ownableAccountContract: string,
 ) {
   const { erc721: accessCardErc721Address } =
     AccessCardNFT.getAddressesForNetwork(networkName);
 
-  const recipe = new AaveV3DepositRecipe(aaveTokenData, ownableAccountContract);
+  const recipe = new AaveV3DepositRecipe(aaveTokenData, ownableAccountContract, depositAmount);
 
   const recipeInput: RecipeInput = {
     railgunAddress: MOCK_RAILGUN_WALLET_ADDRESS,
@@ -58,6 +59,7 @@ export async function depositTokenToAave(
       {
         recipient: NETWORK_CONFIG[networkName].relayAdaptContract,
         ...aaveTokenData,
+        amount: depositAmount
       },
     ],
     nfts: [
@@ -86,6 +88,7 @@ export async function borrowTokenFromAave(
   networkName: NetworkName,
   nftTokenId: string,
   aaveBorrowTokenData: AaveV3TokenData,
+  borrowAmount: bigint,
   ownableAccountContract: string,
   interestRateMode: number,
   referralCode: number,
@@ -96,6 +99,7 @@ export async function borrowTokenFromAave(
   const recipe = new AaveV3BorrowRecipe(
     aaveBorrowTokenData,
     ownableAccountContract,
+    borrowAmount,
     interestRateMode,
     referralCode,
   );

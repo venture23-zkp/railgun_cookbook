@@ -20,11 +20,13 @@ export class AaveV3BorrowStep extends Step {
   private readonly aaveV3PoolContractAddress: string;
   private readonly interestRateMode: number;
   private readonly referralCode: number;
+  private readonly borrowAmount: bigint;
 
   constructor(
     data: AaveV3TokenData,
     ownableContractAddress: string,
     aaveV3PoolContractAddress: string,
+    borrowAmount: bigint,
     interestRateMode: number,
     referralCode: number,
   ) {
@@ -34,21 +36,21 @@ export class AaveV3BorrowStep extends Step {
     this.aaveV3PoolContractAddress = aaveV3PoolContractAddress;
     this.interestRateMode = interestRateMode;
     this.referralCode = referralCode;
+    this.borrowAmount = borrowAmount;
   }
 
   protected async getStepOutput(
     input: StepInput,
   ): Promise<UnvalidatedStepOutput> {
-    const { tokenAddress, amount, decimals } = this.data;
+    const { tokenAddress, decimals } = this.data;
 
     const ownableContract = new AccessCardOwnerAccountContract(
       this.ownableContractAddress,
     );
 
-    // todo: add relayer fee
     const borrowedToken: StepOutputERC20Amount = {
-      expectedBalance: amount,
-      minBalance: amount,
+      expectedBalance: this.borrowAmount,
+      minBalance: this.borrowAmount,
       decimals,
       tokenAddress,
       approvedSpender: undefined,
@@ -60,7 +62,7 @@ export class AaveV3BorrowStep extends Step {
 
     const { data: borrowCalldata } = await aaveV3PoolContract.borrow(
       tokenAddress,
-      amount,
+      this.borrowAmount,
       this.ownableContractAddress,
       this.interestRateMode,
       this.referralCode ?? 0,
@@ -74,9 +76,8 @@ export class AaveV3BorrowStep extends Step {
 
     return {
       crossContractCalls: [borrowTransaction],
-      outputERC20Amounts: [borrowedToken],
+      outputERC20Amounts: [borrowedToken, ...input.erc20Amounts],
       outputNFTs: [...input.nfts],
-      spentERC20Amounts: [],
     };
   }
 }

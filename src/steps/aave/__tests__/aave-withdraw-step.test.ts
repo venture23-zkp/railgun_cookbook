@@ -31,6 +31,7 @@ describe('aave-withdraw-step', () => {
 
     const step = new AaveV3WithdrawStep(
       aaveTokenData,
+      amount,
       ownableAccountContractAddress,
       aaveV3PoolAddress,
     );

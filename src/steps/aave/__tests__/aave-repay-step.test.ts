@@ -37,7 +37,15 @@ describe('aave-repay-step', () => {
 
     const stepInput: StepInput = {
       networkName,
-      erc20Amounts: [],
+      erc20Amounts: [
+        {
+          expectedBalance: usdcAmount,
+          minBalance: usdcAmount,
+          tokenAddress: tokenData.tokenAddress,
+          decimals: tokenData.decimals,
+          approvedSpender: undefined,
+        },
+      ],
       nfts: [],
     };
 

@@ -81,6 +81,7 @@ describe('FORK-run-aave-deposit-recipe', function run() {
     const recipe = new AaveV3DepositRecipe(
       aaveTokenData,
       ownableAccountContract,
+      depositAmount,
     );
 
     const recipeInput: RecipeInput = {
@@ -90,6 +91,7 @@ describe('FORK-run-aave-deposit-recipe', function run() {
         {
           recipient: NETWORK_CONFIG[networkName].relayAdaptContract,
           ...aaveTokenData,
+          amount: depositAmount,
         },
       ],
       nfts: [

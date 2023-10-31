@@ -155,7 +155,7 @@ export type AccessCardMetadata = {
 
 export type AaveV3TokenData = {
   tokenAddress: string;
-  amount: bigint;
+  amount: Optional<bigint>;
   decimals: bigint;
   isBaseToken?: boolean;
 };

@@ -8,6 +8,7 @@ import {
 } from '../../models';
 import { Step } from '../step';
 import { AaveV3PoolContract } from '../../contract/aave/aave-pool-contract';
+import { compareERC20Info } from '../../utils';
 
 export class AaveV3DepositStep extends Step {
   readonly config: StepConfig = {
@@ -33,15 +34,22 @@ export class AaveV3DepositStep extends Step {
   protected async getStepOutput(
     input: StepInput,
   ): Promise<UnvalidatedStepOutput> {
-    const { tokenAddress, amount, decimals } = this.data;
+    const { tokenAddress, decimals } = this.data;
+    const { erc20Amounts } = input;
 
     const ownableContract = new AccessCardOwnerAccountContract(
       this.ownableContractAddress,
     );
 
-    // todo: add relayer fee
+    const { erc20AmountForStep, unusedERC20Amounts } =
+      this.getValidInputERC20Amount(
+        erc20Amounts,
+        erc20Amount => compareERC20Info(erc20Amount, this.data),
+        this.data.amount,
+      );
+
     const spentToken: RecipeERC20AmountRecipient = {
-      amount,
+      amount: this.data.amount ?? erc20AmountForStep.expectedBalance,
       decimals,
       tokenAddress,
       recipient: this.ownableContractAddress,
@@ -53,7 +61,7 @@ export class AaveV3DepositStep extends Step {
 
     const { data: depositCalldata } = await aaveV3PoolContract.deposit(
       tokenAddress,
-      amount,
+      this.data.amount ?? erc20AmountForStep.expectedBalance,
       this.ownableContractAddress,
       0n,
     );
@@ -66,7 +74,7 @@ export class AaveV3DepositStep extends Step {
 
     return {
       crossContractCalls: [depositTransaction],
-      outputERC20Amounts: [],
+      outputERC20Amounts: [...unusedERC20Amounts],
       outputNFTs: [...input.nfts],
       spentERC20Amounts: [spentToken],
     };
