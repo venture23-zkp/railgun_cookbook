@@ -1,9 +1,5 @@
 import { AccessCardERC721Contract } from '../../contract/access-card/access-card-erc721-contract';
-import {
-  StepConfig,
-  StepInput,
-  UnvalidatedStepOutput,
-} from '../../models';
+import { StepConfig, StepInput, UnvalidatedStepOutput } from '../../models';
 import { Step } from '../step';
 
 export class AccessCardSetNFTMetadataStep extends Step {
@@ -32,12 +28,19 @@ export class AccessCardSetNFTMetadataStep extends Step {
   ): Promise<UnvalidatedStepOutput> {
     const contract = new AccessCardERC721Contract(this.accessCardNFTAddress);
 
-    const crossContractCall = await contract.setEncryptedMetadata(BigInt(this.nftTokenSubID), this.encryptedNFTMetadata);
+    if (input.nfts.length === 0) {
+      throw new Error('Access Card NFT information is required for the update');
+    }
+
+    const crossContractCall = await contract.setEncryptedMetadata(
+      BigInt(this.nftTokenSubID),
+      this.encryptedNFTMetadata,
+    );
 
     return {
       crossContractCalls: [crossContractCall],
       outputERC20Amounts: input.erc20Amounts,
       outputNFTs: input.nfts,
-    }
+    };
   }
 }

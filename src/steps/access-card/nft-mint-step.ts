@@ -33,6 +33,7 @@ export class AccessCardNFTMintStep extends Step {
     const contract = new AccessCardERC721Contract(this.accessCardNFTAddress);
     const crossContractCall = await contract.mint(this.encryptedNFTMetadata);
 
+    // todo: Correct tokenSubID and amount can only be fetched when transaction is executed on blockchain
     const accessCardNFT: RecipeNFTInfo = {
       nftAddress: this.accessCardNFTAddress,
       nftTokenType: NFTTokenType.ERC721,
