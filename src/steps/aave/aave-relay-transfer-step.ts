@@ -59,17 +59,9 @@ export class AaveV3TransferToRelayStep extends Step {
       0n,
     );
 
-    const transferredERC20: RecipeERC20AmountRecipient = {
-      tokenAddress,
-      decimals,
-      amount: this.data.amount ?? erc20AmountForStep.expectedBalance,
-      recipient: NETWORK_CONFIG[networkName].relayAdaptContract,
-    }
-
     return {
       crossContractCalls: [transferTransaction],
-      outputERC20Amounts: [...unusedERC20Amounts],
-      spentERC20Amounts: [transferredERC20],
+      outputERC20Amounts: [erc20AmountForStep, ...unusedERC20Amounts],
       outputNFTs: [...input.nfts],
     };
   }
