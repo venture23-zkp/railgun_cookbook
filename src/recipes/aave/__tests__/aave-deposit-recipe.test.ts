@@ -38,7 +38,7 @@ describe('aave-deposit-recipe', () => {
     );
   });
 
-  it('Should create aave-deposit-recipe without explicit amount in aaveTokenData', async () => {
+  it('Should create aave-deposit-recipe', async () => {
     const aaveTokenData: AaveV3TokenData = {
       tokenAddress: testConfig.contractsEthereum.usdc,
       amount: undefined,
