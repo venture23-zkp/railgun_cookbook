@@ -3,8 +3,14 @@ import {
   NetworkName,
   RailgunNFTAmountRecipient,
   TXIDVersion,
+  delay,
 } from '@railgun-community/shared-models';
-import { NFTTokenData, TokenType, balanceForNFT, hexlify } from '@railgun-community/wallet';
+import {
+  NFTTokenData,
+  TokenType,
+  balanceForNFT,
+  hexlify,
+} from '@railgun-community/wallet';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { RecipeInput } from '../../../models/export-models';
@@ -34,13 +40,13 @@ import { AccessCardNFT } from '../../../api/access-card/access-card-nft';
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-const networkName = NetworkName.Hardhat;
+const networkName = NetworkName.Ethereum;
 
 const accessCardTokenData: NFTTokenData = {
   tokenAddress: AccessCardNFT.getAddressesForNetwork(networkName).erc721,
   tokenSubID: '0',
   tokenType: TokenType.ERC721,
-}
+};
 
 describe('FORK-run-access-card-recipes', function run() {
   //{ name: 'name 1', description: 'description 1' }
@@ -87,8 +93,16 @@ describe('FORK-run-access-card-recipes', function run() {
       true,
     );
 
+    // wait a second for updates
+    await delay(1000);
+
     const wallet = getTestRailgunWallet();
-    const nftBalance = await balanceForNFT(TXIDVersion.V2_PoseidonMerkle, wallet, networkName, accessCardTokenData);
+    const nftBalance = await balanceForNFT(
+      TXIDVersion.V2_PoseidonMerkle,
+      wallet,
+      networkName,
+      accessCardTokenData,
+    );
     const newSupply = (await accessCardCtx.getTotalSupply())[0];
 
     expect(nftBalance).to.equal(1n);
@@ -193,8 +207,16 @@ describe('FORK-run-access-card-recipes', function run() {
       [nftRecipients],
     );
 
+    // wait a second for updates
+    await delay(1000);
+
     const wallet2 = getTestRailgunWallet2();
-    const nftBalance = await balanceForNFT(TXIDVersion.V2_PoseidonMerkle, wallet2, networkName, accessCardTokenData);
+    const nftBalance = await balanceForNFT(
+      TXIDVersion.V2_PoseidonMerkle,
+      wallet2,
+      networkName,
+      accessCardTokenData,
+    );
 
     expect(nftBalance).to.equal(1n);
   });
