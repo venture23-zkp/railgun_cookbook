@@ -124,8 +124,10 @@ describe('FORK-run-aave-deposit-recipe', function run() {
       ownableAccountContract,
     );
 
-    expect(aTokenBalance).to.equal(
-      depositAmount - (MOCK_SHIELD_FEE_BASIS_POINTS * depositAmount) / 10_000n,
-    );
+    const actualDepositedAmount =
+      depositAmount - (MOCK_SHIELD_FEE_BASIS_POINTS * depositAmount) / 10_000n;
+
+    // +- 10 for interest calculation
+    expect(aTokenBalance - actualDepositedAmount).to.be.lessThanOrEqual(10);
   });
 });
