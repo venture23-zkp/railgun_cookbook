@@ -9,6 +9,9 @@ import ABI_AAVE_POOL from './aave/AavePool.json';
 import ABI_ERC6551_REGISTRY from './registry/ERC6551Registry.json';
 import ABI_ACCESS_CARD_ERC721 from './access-card/AccessCardERC721.json';
 import ABI_ACCESS_CARD_OWNER_ACCOUNT from './access-card/AccessCardOwnerAccount.json';
+import ABI_CDP_MANAGER from './dai-minting/CdpManager.json';
+import ABI_TOKEN_ADAPTER from './dai-minting/TokenAdapter.json';
+import ABI_MCD_VAT from './dai-minting/McdVat.json';
 
 export const abi = {
   token: {
@@ -37,4 +40,9 @@ export const abi = {
   registry: {
     erc6551Registry: ABI_ERC6551_REGISTRY,
   },
+  daiMinting: {
+    cdpManager: ABI_CDP_MANAGER,
+    tokenAdapter: ABI_TOKEN_ADAPTER,
+    mcdVat: ABI_MCD_VAT,
+  }
 } as const;

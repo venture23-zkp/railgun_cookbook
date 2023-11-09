@@ -4,6 +4,7 @@
 export * as aave from "./aave";
 export * as accessCard from "./access-card";
 export * as adapt from "./adapt";
+export * as daiMinting from "./dai-minting";
 export * as liquidity from "./liquidity";
 export * as registry from "./registry";
 export * as token from "./token";
