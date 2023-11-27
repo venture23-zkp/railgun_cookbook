@@ -1,6 +1,6 @@
 import { abi } from '../../abi/abi';
 import { Contract, Provider } from 'ethers';
-import { CdpManager } from 'typechain';
+import { CdpManager } from '../../typechain';
 
 export class CdpManagerContract {
   private readonly contract: CdpManager;

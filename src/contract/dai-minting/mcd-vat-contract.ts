@@ -1,8 +1,8 @@
 import { abi } from '../../abi/abi';
 import { Contract, Provider } from 'ethers';
-import { McdVat } from 'typechain';
+import { McdVat } from '../../typechain';
 
-export class CdpManagerContract {
+export class McdVatContract {
   private readonly contract: McdVat;
 
   constructor(contractAddress: string, provider?: Provider) {

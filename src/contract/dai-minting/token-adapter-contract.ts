@@ -1,8 +1,8 @@
 import { abi } from '../../abi/abi';
 import { Contract, Provider } from 'ethers';
-import { TokenAdapter } from 'typechain';
+import { TokenAdapter } from '../../typechain';
 
-export class CdpManagerContract {
+export class TokenAdapterContract {
   private readonly contract: TokenAdapter;
 
   constructor(contractAddress: string, provider?: Provider) {
