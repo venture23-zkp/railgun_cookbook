@@ -1,7 +1,7 @@
 import { StepConfig, StepInput, UnvalidatedStepOutput } from '../../models';
 import { Step } from '../step';
 import { DaiMinting } from '../../api/dai-minting';
-import { McdVatContract } from 'contract/dai-minting/mcd-vat-contract';
+import { McdVatContract } from '../../contract/dai-minting/mcd-vat-contract';
 
 export class DaiAllowMoveDaiToUserStep extends Step {
   readonly config: StepConfig = {
@@ -24,7 +24,7 @@ export class DaiAllowMoveDaiToUserStep extends Step {
     );
 
     const moveDaiTransaction = await mcdVatContract.allowDaiWithdrawal(
-      DaiMinting.getDaiMintingInfoForNetwork(networkName).DAI.MCD_JOIN_DAI,
+      DaiMinting.getDaiMintingInfoForNetwork(networkName).DAI.MCD_JOIN,
     );
 
     return {

@@ -45,7 +45,7 @@ export class DaiExitToErc20DaiStep extends Step {
     );
 
     const daiAdapterContract = new TokenAdapterContract(
-      DaiMinting.getDaiMintingInfoForNetwork(networkName).DAI.MCD_JOIN_DAI,
+      DaiMinting.getDaiMintingInfoForNetwork(networkName).DAI.MCD_JOIN,
     );
 
     const exitToErc20DaiTransaction = await daiAdapterContract.exit(

@@ -159,3 +159,7 @@ export type AaveV3TokenData = {
   decimals: bigint;
   isBaseToken?: boolean;
 };
+
+export type DaiMintingCollateralInfo = RecipeERC20Info & {
+  tokenSymbol: 'WBTC';
+}

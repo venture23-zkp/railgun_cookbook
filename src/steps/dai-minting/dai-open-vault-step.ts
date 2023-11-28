@@ -1,7 +1,7 @@
-import { CdpManagerContract } from 'contract/dai-minting/cdp-manager-contract';
+import { CdpManagerContract } from '../../contract/dai-minting/cdp-manager-contract';
 import { StepConfig, StepInput, UnvalidatedStepOutput } from '../../models';
 import { Step } from '../step';
-import { DaiMinting } from 'api/dai-minting';
+import { DaiMinting } from '../../api/dai-minting';
 import { convertToIlk } from '../../utils';
 
 export class DaiOpenVaultStep extends Step {

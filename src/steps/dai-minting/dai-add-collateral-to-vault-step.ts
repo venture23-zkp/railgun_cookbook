@@ -1,5 +1,6 @@
-import { CdpManagerContract } from 'contract/dai-minting/cdp-manager-contract';
+import { CdpManagerContract } from '../../contract/dai-minting/cdp-manager-contract';
 import {
+  RecipeERC20AmountRecipient,
   RecipeERC20Info,
   StepConfig,
   StepInput,
@@ -17,18 +18,21 @@ export class DaiAddCollateralToVault extends Step {
   };
 
   private readonly cdpId: bigint;
+  private readonly vaultAddress: string;
   private readonly collateralAmount: Optional<bigint>;
   private readonly daiMintAmount: bigint;
   private readonly lockTokenData: RecipeERC20Info;
 
   constructor(
     cdpId: bigint,
+    vaultAddress: string,
     daiMintAmount: bigint,
     lockTokenData: RecipeERC20Info,
     collateralAmount?: bigint,
   ) {
     super();
     this.cdpId = cdpId;
+    this.vaultAddress = vaultAddress;
     this.collateralAmount = collateralAmount;
     this.daiMintAmount = daiMintAmount;
     this.lockTokenData = lockTokenData;
@@ -50,7 +54,7 @@ export class DaiAddCollateralToVault extends Step {
         this.collateralAmount,
       );
 
-    const openVaultTransaction = await cdpManagerContract.addCollateral(
+    const addCollateralTransaction = await cdpManagerContract.addCollateral(
       this.cdpId,
       this.collateralAmount ?? erc20AmountForStep.expectedBalance,
       this.daiMintAmount,
@@ -67,9 +71,17 @@ export class DaiAddCollateralToVault extends Step {
       approvedSpender: undefined,
     };
 
+    const spentCollateralToken: RecipeERC20AmountRecipient = {
+      tokenAddress: this.lockTokenData.tokenAddress,
+      decimals: this.lockTokenData.decimals,
+      recipient: this.vaultAddress,
+      amount: erc20AmountForStep.expectedBalance,
+    };
+
     return {
-      crossContractCalls: [openVaultTransaction],
+      crossContractCalls: [addCollateralTransaction],
       outputERC20Amounts: [...unusedERC20Amounts, mintedDaiToken],
+      spentERC20Amounts: [spentCollateralToken],
       outputNFTs: [...input.nfts],
     };
   }
