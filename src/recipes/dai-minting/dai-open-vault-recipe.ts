@@ -16,7 +16,8 @@ import { getUnshieldedAmountAfterFee } from '../../utils/fee';
 export class DaiOpenVaultRecipe extends Recipe {
   readonly config: RecipeConfig = {
     name: 'Open vault for minting DAI',
-    description: 'Opens an empty vault which can be used to lock collateral info',
+    description:
+      'Opens an empty vault which can be used to lock collateral info',
     minGasLimit: MIN_GAS_LIMIT_ANY_RECIPE,
   };
 
@@ -56,6 +57,7 @@ export class DaiOpenVaultRecipe extends Recipe {
       new TransferERC20Step(
         this.ownableContractAddress,
         this.collateralTokenInfo,
+        getUnshieldedAmountAfterFee(networkName, this.collateralAmount),
       ),
       new DaiApproveAdapterStep(
         this.collateralTokenInfo,

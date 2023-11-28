@@ -1,10 +1,8 @@
 import { AccessCardOwnerAccountContract } from '../../contract/access-card/access-card-owner-account-contract';
 import {
-  AaveV3TokenData,
   RecipeERC20Info,
   StepConfig,
   StepInput,
-  StepOutputERC20Amount,
   UnvalidatedStepOutput,
 } from '../../models';
 import { Step } from '../step';
@@ -13,7 +11,8 @@ import { ERC20Contract } from '../../contract';
 export class DaiApproveAdapterStep extends Step {
   readonly config: StepConfig = {
     name: 'Dai Minting Approval',
-    description: 'Approves the specified ERC20 token to its adapter contract via AC',
+    description:
+      'Approves the specified ERC20 token to its adapter contract via AC',
   };
 
   private readonly tokenInfo: RecipeERC20Info;
@@ -57,18 +56,9 @@ export class DaiApproveAdapterStep extends Step {
       0n,
     );
 
-    const approvedERC20Amount: StepOutputERC20Amount = {
-      tokenAddress: this.tokenInfo.tokenAddress,
-      decimals: this.tokenInfo.decimals,
-      isBaseToken: this.tokenInfo.isBaseToken,
-      expectedBalance: this.amount,
-      minBalance: this.amount,
-      approvedSpender: this.adapterContractAddress,
-    };
-
     return {
       crossContractCalls: [approveTransaction],
-      outputERC20Amounts: [approvedERC20Amount, ...input.erc20Amounts],
+      outputERC20Amounts: [...input.erc20Amounts],
       outputNFTs: [...input.nfts],
     };
   }
