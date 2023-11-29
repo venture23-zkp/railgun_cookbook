@@ -4,7 +4,7 @@ import { Step } from '../step';
 
 export class DaiLockTokensToAdapterStep extends Step {
   readonly config: StepConfig = {
-    name: 'Dai - Lock tokens ',
+    name: 'Dai - Lock tokens',
     description: 'Locks collateral tokens on the token adapter contract',
   };
 

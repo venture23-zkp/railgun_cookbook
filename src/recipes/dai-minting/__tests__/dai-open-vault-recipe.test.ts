@@ -19,7 +19,6 @@ import {
 import { AccessCardNFT } from '../../../api/access-card/access-card-nft';
 import { testConfig } from '../../../test/test-config.test';
 import {
-  getShieldFee,
   getUnshieldFee,
   getUnshieldedAmountAfterFee,
 } from '../../../utils/fee';
@@ -33,7 +32,7 @@ const ownableContractAddress = '0x12fdB15Bc1B52EdD68169AF350e6deD8E5599134'; // 
 const collateralAmount = 1_00000000n;
 const nftTokenId = '0';
 
-describe.only('dai-open-vault-recipe', () => {
+describe('dai-open-vault-recipe', () => {
   before(() => {
     setRailgunFees(
       networkName,
@@ -93,7 +92,7 @@ describe.only('dai-open-vault-recipe', () => {
     expect(output.feeERC20AmountRecipients).to.deep.equal([
       {
         tokenAddress: wbtcTokenInfo.tokenAddress,
-        amount: getShieldFee(networkName, collateralAmount),
+        amount: getUnshieldFee(networkName, collateralAmount),
         recipient: 'RAILGUN Unshield Fee',
         decimals: wbtcTokenInfo.decimals,
       },
