@@ -24,7 +24,7 @@ import { testConfig } from '../../../test/test-config.test';
 import { Aave } from '../../../api/aave/aave';
 import { AccessCardNFT } from '../../../api/access-card/access-card-nft';
 import { ERC20Contract } from '../../../contract';
-import { createAccessCard } from './aave-test-helpers';
+import { createAccessCard } from '../../access-card/__tests__/access-card-test-helpers';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;

@@ -1,5 +1,4 @@
 import { JsonRpcProvider } from 'ethers';
-import { CreateAccessCardRecipe } from '../../access-card/create-access-card-recipe';
 import { AaveV3TokenData, RecipeInput } from '../../../models';
 import { MOCK_RAILGUN_WALLET_ADDRESS } from '../../../test/mocks.test';
 import {
@@ -11,33 +10,6 @@ import { executeRecipeStepsAndAssertUnshieldBalances } from '../../../test/commo
 import { AaveV3DepositRecipe } from '../aave-deposit-recipe';
 import { AccessCardNFT } from '../../../api';
 import { AaveV3BorrowRecipe } from '../aave-borrow-recipe';
-
-export async function createAccessCard(
-  provider: JsonRpcProvider,
-  networkName: NetworkName,
-) {
-  //{ name: 'name 1', description: 'description 1' }
-  const encryptedNftData =
-    '4d594d3e82f43d8e97bb70cb9c6d4a3e2f57a1f43966a4017fdbeae708';
-
-  const recipe = new CreateAccessCardRecipe(encryptedNftData);
-
-  const recipeInput: RecipeInput = {
-    railgunAddress: MOCK_RAILGUN_WALLET_ADDRESS,
-    networkName,
-    erc20Amounts: [],
-    nfts: [],
-  };
-
-  const recipeoutput = await recipe.getRecipeOutput(recipeInput);
-  await executeRecipeStepsAndAssertUnshieldBalances(
-    recipe.config.name,
-    recipeInput,
-    recipeoutput,
-    true,
-    true,
-  );
-}
 
 export async function depositTokenToAave(
   provider: JsonRpcProvider,
