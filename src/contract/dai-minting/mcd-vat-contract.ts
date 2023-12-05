@@ -15,7 +15,7 @@ export class McdVatContract {
 
   /**
    * allow the Dai adapter to move Dai from VAT to user address
-   * @param daiAdapterAddress 
+   * @param daiAdapterAddress
    * @returns transaction object
    */
   allowDaiWithdrawal(daiAdapterAddress: string) {
@@ -39,5 +39,14 @@ export class McdVatContract {
    */
   getInternalDaiBalance(vaultAddress: string) {
     return this.contract.dai.staticCallResult(vaultAddress);
+  }
+
+  /**
+   * Returns ilk info (Art, rate, spot, line, dust)
+   * @param tokenIlk 32 bytes vault type
+   * @returns
+   */
+  getIlkInfo(tokenIlk: string) {
+    return this.contract.ilks.staticCallResult(tokenIlk) as unknown as bigint[];
   }
 }

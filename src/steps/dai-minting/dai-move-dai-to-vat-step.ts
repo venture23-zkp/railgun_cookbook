@@ -9,6 +9,7 @@ import { Step } from '../step';
 import { DaiMinting } from '../../api/dai-minting';
 import { CdpManagerContract } from '../../contract/dai-minting/cdp-manager-contract';
 
+const RAD_DECIMALS = 45n;
 export class DaiMoveDaiToVatStep extends Step {
   readonly config: StepConfig = {
     name: 'Dai - Move Dai to VAT for a user',
@@ -18,13 +19,17 @@ export class DaiMoveDaiToVatStep extends Step {
 
   private readonly cdpId: bigint;
   private readonly ownerAddress: string; // DAI will be transferred to this address
-  private readonly amount: Optional<bigint>; // amount to transfer
+  private readonly amount: Optional<bigint>; // amount to transfer in DAI decimals
 
   constructor(cdpId: bigint, ownerAddress: string, amount?: bigint) {
     super();
     this.cdpId = cdpId;
     this.ownerAddress = ownerAddress;
     this.amount = amount;
+  }
+
+  private getDaiInRadDecimals(amount: bigint, daiDecimals: bigint) {
+    return (amount * 10n ** RAD_DECIMALS) / 10n ** daiDecimals;
   }
 
   protected async getStepOutput(
@@ -36,11 +41,11 @@ export class DaiMoveDaiToVatStep extends Step {
       DaiMinting.getDaiMintingInfoForNetwork(networkName).CDP_MANAGER,
     );
 
+    const { DAI } = DaiMinting.getDaiMintingInfoForNetwork(networkName);
+
     const daiToken: RecipeERC20Info = {
-      tokenAddress:
-        DaiMinting.getDaiMintingInfoForNetwork(networkName).DAI.ERC20,
-      decimals:
-        DaiMinting.getDaiMintingInfoForNetwork(networkName).DAI.DECIMALS,
+      tokenAddress: DAI.ERC20,
+      decimals: DAI.DECIMALS,
       isBaseToken: false,
     };
 
@@ -53,7 +58,10 @@ export class DaiMoveDaiToVatStep extends Step {
     const moveDaiTransaction = await cdpManagerContract.moveDaiToVatForAddress(
       this.cdpId,
       this.ownerAddress,
-      this.amount ?? erc20AmountForStep.expectedBalance,
+      this.getDaiInRadDecimals(
+        this.amount ?? erc20AmountForStep.expectedBalance,
+        DAI.DECIMALS,
+      ),
     );
 
     return {

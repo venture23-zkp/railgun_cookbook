@@ -3,6 +3,7 @@ import { StepConfig, StepInput, UnvalidatedStepOutput } from '../../models';
 import { Step } from '../step';
 import { DaiMinting } from '../../api/dai-minting';
 import { convertToIlk } from '../../utils';
+import { AccessCardOwnerAccountContract } from '../../contract/access-card/access-card-owner-account-contract';
 
 export class DaiOpenVaultStep extends Step {
   readonly config: StepConfig = {
@@ -24,14 +25,24 @@ export class DaiOpenVaultStep extends Step {
   ): Promise<UnvalidatedStepOutput> {
     const { networkName } = input;
 
-    const cdpManagerContract = new CdpManagerContract(
-      DaiMinting.getDaiMintingInfoForNetwork(networkName).CDP_MANAGER,
+    const { CDP_MANAGER } = DaiMinting.getDaiMintingInfoForNetwork(networkName);
+
+    const cdpManagerContract = new CdpManagerContract(CDP_MANAGER);
+
+    const ownableContract = new AccessCardOwnerAccountContract(
+      this.vaultOwnerAddress,
     );
 
     const computedIlk = convertToIlk(this.tokenAdapterIlkName);
-    const openVaultTransaction = await cdpManagerContract.openVault(
+    const openVaultCalldata = await cdpManagerContract.openVault(
       computedIlk,
       this.vaultOwnerAddress,
+    );
+
+    const openVaultTransaction = await ownableContract.executeCall(
+      CDP_MANAGER,
+      openVaultCalldata.data,
+      0n,
     );
 
     return {

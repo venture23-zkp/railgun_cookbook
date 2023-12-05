@@ -18,16 +18,15 @@ export class DaiAddCollateralToVaultStep extends Step {
   private readonly collateralAmount: bigint;
   private readonly daiMintAmount: bigint;
 
-
   constructor(
     cdpId: bigint,
-    daiMintAmount: bigint,
-    collateralAmount: bigint,
+    formattedDaiMintAmount: bigint,
+    collateralAmountTenPow18: bigint,
   ) {
     super();
     this.cdpId = cdpId;
-    this.collateralAmount = collateralAmount;
-    this.daiMintAmount = daiMintAmount;
+    this.collateralAmount = collateralAmountTenPow18;
+    this.daiMintAmount = formattedDaiMintAmount;
   }
 
   protected async getStepOutput(
@@ -39,6 +38,8 @@ export class DaiAddCollateralToVaultStep extends Step {
       DaiMinting.getDaiMintingInfoForNetwork(networkName).CDP_MANAGER,
     );
 
+    const { DAI } = DaiMinting.getDaiMintingInfoForNetwork(networkName);
+
     const addCollateralTransaction = await cdpManagerContract.addCollateral(
       this.cdpId,
       this.collateralAmount,
@@ -46,10 +47,8 @@ export class DaiAddCollateralToVaultStep extends Step {
     );
 
     const mintedDaiToken: StepOutputERC20Amount = {
-      tokenAddress:
-        DaiMinting.getDaiMintingInfoForNetwork(networkName).DAI.ERC20,
-      decimals:
-        DaiMinting.getDaiMintingInfoForNetwork(networkName).DAI.DECIMALS,
+      tokenAddress: DAI.ERC20,
+      decimals: DAI.DECIMALS,
       isBaseToken: false,
       expectedBalance: this.daiMintAmount,
       minBalance: this.daiMintAmount,

@@ -16,6 +16,9 @@ import { NetworkName } from '@railgun-community/shared-models';
 import { AccessCardNFT } from '../../api';
 import { getUnshieldedAmountAfterFee } from '../../utils/fee';
 
+const TEN_TO_DECIMALS_18 = 10n ** 18n;
+const RAY_DECIMALS = 27n;
+
 export class MintDaiRecipe extends Recipe {
   readonly config: RecipeConfig = {
     name: 'Mint DAI token',
@@ -28,6 +31,7 @@ export class MintDaiRecipe extends Recipe {
   private readonly daiMintAmount: bigint;
   private readonly collateralTokenInfo: DaiMintingCollateralInfo;
   private readonly collateralAmount: bigint; // the original collateralAmount. Unshield fee is deducted within the recipe
+  private readonly currentIlkRate: bigint; // fetch this from VAT contract -> ilks function
   private readonly vaultAddress: string;
   private readonly cdpId: bigint;
 
@@ -36,6 +40,7 @@ export class MintDaiRecipe extends Recipe {
     daiMintAmount: bigint,
     collateralTokenInfo: DaiMintingCollateralInfo,
     collateralAmount: bigint,
+    currentIlkRate: bigint,
     vaultAddress: string,
     cdpId: bigint,
   ) {
@@ -44,6 +49,7 @@ export class MintDaiRecipe extends Recipe {
     this.daiMintAmount = daiMintAmount;
     this.collateralTokenInfo = { ...collateralTokenInfo };
     this.collateralAmount = collateralAmount;
+    this.currentIlkRate = currentIlkRate;
     this.vaultAddress = vaultAddress;
     this.cdpId = cdpId;
   }
@@ -56,22 +62,36 @@ export class MintDaiRecipe extends Recipe {
     firstInternalStepInput: StepInput,
   ): Promise<Step[]> {
     const { networkName } = firstInternalStepInput;
+    const { DAI } = DaiMinting.getDaiMintingInfoForNetwork(networkName);
 
     const { MCD_JOIN: collateralAdapterAddress } =
       DaiMinting.getDaiMintingInfoForNetwork(networkName)[
         this.collateralTokenInfo.tokenSymbol
       ];
 
+    const realizedCollateralAmount = getUnshieldedAmountAfterFee(
+      networkName,
+      this.collateralAmount,
+    );
+    const formattedCollateralAmount =
+      (realizedCollateralAmount * TEN_TO_DECIMALS_18) /
+      10n ** this.collateralTokenInfo.decimals;
+
+    const formattedDaiMintAmount =
+      (this.daiMintAmount * TEN_TO_DECIMALS_18 * 10n ** RAY_DECIMALS) /
+        (this.currentIlkRate * 10n ** DAI.DECIMALS) +
+      1n;
+
     return [
       new DaiLockTokensToAdapterStep(
         collateralAdapterAddress,
         this.vaultAddress,
-        getUnshieldedAmountAfterFee(networkName, this.collateralAmount),
+        realizedCollateralAmount,
       ),
       new DaiAddCollateralToVaultStep(
         this.cdpId,
-        this.daiMintAmount,
-        getUnshieldedAmountAfterFee(networkName, this.collateralAmount),
+        formattedDaiMintAmount,
+        formattedCollateralAmount,
       ),
       new DaiMoveDaiToVatStep(this.cdpId, this.ownableContractAddress),
       new DaiAllowMoveDaiToUserStep(),

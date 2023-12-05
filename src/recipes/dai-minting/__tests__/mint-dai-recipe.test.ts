@@ -5,10 +5,7 @@ import {
   DaiMintingCollateralInfo,
   RecipeInput,
 } from '../../../models/export-models';
-import {
-  NFTTokenType,
-  NetworkName,
-} from '@railgun-community/shared-models';
+import { NFTTokenType, NetworkName } from '@railgun-community/shared-models';
 import { setRailgunFees } from '../../../init';
 import {
   MOCK_RAILGUN_WALLET_ADDRESS,
@@ -17,10 +14,7 @@ import {
 } from '../../../test/mocks.test';
 import { AccessCardNFT } from '../../../api/access-card/access-card-nft';
 import { testConfig } from '../../../test/test-config.test';
-import {
-  getShieldFee,
-  getShieldedAmountAfterFee,
-} from '../../../utils/fee';
+import { getShieldFee, getShieldedAmountAfterFee } from '../../../utils/fee';
 import { DaiMinting } from '../../../api/dai-minting';
 
 chai.use(chaiAsPromised);
@@ -31,10 +25,11 @@ const ownableContractAddress = '0x12fdB15Bc1B52EdD68169AF350e6deD8E5599134'; // 
 const vaultAddress = '0x123d5ed9889ad2019e9ae967cddc4f36c052a302'; // random address
 const cdpId = 5n; // random cdpId
 const collateralAmount = 1_00000000n; // 1 WBTC
+const currentIlkRate = 10n ** 27n; // random rate
 const daiMintAmount = 1_000_000_000_000_000_000n; // 1 DAI
 const nftTokenId = '0';
 
-describe.only('mint-dai-recipe', () => {
+describe('mint-dai-recipe', () => {
   before(() => {
     setRailgunFees(
       networkName,
@@ -43,6 +38,7 @@ describe.only('mint-dai-recipe', () => {
     );
   });
 
+  // todo: Update expect cases after introducing Ilk rate
   it('Should create mint-dai-recipe', async () => {
     const {
       CDP_MANAGER: cdpManagerAddress,
@@ -62,6 +58,7 @@ describe.only('mint-dai-recipe', () => {
       daiMintAmount,
       wbtcTokenInfo,
       collateralAmount,
+      currentIlkRate,
       vaultAddress,
       cdpId,
     );
