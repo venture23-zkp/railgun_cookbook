@@ -1,20 +1,27 @@
-import { NetworkName } from '@railgun-community/shared-models';
+import { NetworkName, isDefined } from '@railgun-community/shared-models';
 import {
   RecipeERC20Amount,
+  RecipeERC20AmountRecipient,
   RecipeERC20Info,
   RecipeOutput,
+  StepOutputERC20Amount,
   SwapQuoteData,
 } from '../../models/export-models';
-import { compareERC20Info } from '../../utils';
+import { compareERC20Info, getIsUnvalidatedRailgunAddress } from '../../utils';
 import { Recipe } from '../recipe';
 import { CookbookDebug } from '../../utils/cookbook-debug';
-import { BigNumber } from 'ethers';
 
 export abstract class SwapRecipe extends Recipe {
   protected quote: Optional<SwapQuoteData>;
 
   protected abstract readonly sellERC20Info: RecipeERC20Info;
   protected abstract readonly buyERC20Info: RecipeERC20Info;
+
+  protected readonly destinationAddress: Optional<string>;
+
+  constructor() {
+    super();
+  }
 
   getLatestQuote(): Optional<SwapQuoteData> {
     return this.quote;
@@ -28,18 +35,19 @@ export abstract class SwapRecipe extends Recipe {
   getBuySellAmountsFromRecipeOutput(
     recipeOutput: Optional<RecipeOutput>,
   ): Optional<{
-    sellFee: BigNumber;
-    buyAmount: BigNumber;
-    buyMinimum: BigNumber;
-    buyFee: BigNumber;
+    sellUnshieldFee: bigint;
+    buyAmount: bigint;
+    buyMinimum: bigint;
+    buyShieldFee: bigint;
   }> {
     try {
       if (!recipeOutput) {
         return undefined;
       }
 
-      const unshieldStepOutput = recipeOutput.stepOutputs[0];
-      const unshieldFee = unshieldStepOutput.feeERC20AmountRecipients.find(
+      const firstOutputIndex = 0;
+      const unshieldStepOutput = recipeOutput.stepOutputs[firstOutputIndex];
+      const unshieldFee = unshieldStepOutput.feeERC20AmountRecipients?.find(
         fee => {
           return compareERC20Info(fee, this.sellERC20Info);
         },
@@ -48,27 +56,50 @@ export abstract class SwapRecipe extends Recipe {
         throw new Error('Expected unshield fee to match sell token.');
       }
 
-      const shieldStepOutput =
-        recipeOutput.stepOutputs[recipeOutput.stepOutputs.length - 1];
-      const shieldFee = shieldStepOutput.feeERC20AmountRecipients.find(fee => {
-        return compareERC20Info(fee, this.buyERC20Info);
-      });
-      if (!shieldFee) {
-        throw new Error('Expected shield fee to match buy token.');
+      const swapStepOutput = recipeOutput.stepOutputs[2];
+      if (swapStepOutput.name !== '0x Exchange Swap') {
+        throw new Error('Expected step output 3 to be 0x Exchange Swap.');
       }
 
-      const output = shieldStepOutput.outputERC20Amounts.find(outputAmount => {
-        return compareERC20Info(outputAmount, this.buyERC20Info);
-      });
-      if (!output) {
-        throw new Error('Expected output to match buy token.');
+      let buyOutput: Optional<StepOutputERC20Amount>;
+      let buyShieldFee: Optional<RecipeERC20AmountRecipient>;
+
+      if (
+        isDefined(this.destinationAddress) &&
+        !getIsUnvalidatedRailgunAddress(this.destinationAddress)
+      ) {
+        // If there's a public destination address:
+        // Buy output is from swap value, which is transferred out before it's shielded.
+        buyOutput = swapStepOutput.outputERC20Amounts.find(outputAmount => {
+          return compareERC20Info(outputAmount, this.buyERC20Info);
+        });
+        if (!buyOutput) {
+          throw new Error('Expected swap output to match buy token.');
+        }
+      } else {
+        // If there's no destination address, or a private destination:
+        // Buy output is from final shield value.
+        const lastOutputIndex = recipeOutput.stepOutputs.length - 1;
+        const shieldStepOutput = recipeOutput.stepOutputs[lastOutputIndex];
+        buyOutput = shieldStepOutput.outputERC20Amounts.find(outputAmount => {
+          return compareERC20Info(outputAmount, this.buyERC20Info);
+        });
+        if (!buyOutput) {
+          throw new Error('Expected swap output to match buy token.');
+        }
+        buyShieldFee = shieldStepOutput.feeERC20AmountRecipients?.find(fee => {
+          return compareERC20Info(fee, this.buyERC20Info);
+        });
+        if (!buyShieldFee) {
+          throw new Error('Expected shield fee to match buy token.');
+        }
       }
 
       return {
-        sellFee: unshieldFee.amount,
-        buyAmount: output.expectedBalance,
-        buyMinimum: output.minBalance,
-        buyFee: shieldFee.amount,
+        sellUnshieldFee: unshieldFee.amount,
+        buyAmount: buyOutput.expectedBalance,
+        buyMinimum: buyOutput.minBalance,
+        buyShieldFee: buyShieldFee?.amount ?? 0n,
       };
     } catch (err) {
       if (!(err instanceof Error)) {

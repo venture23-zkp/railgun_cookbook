@@ -1,7 +1,7 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { TransferERC20Step } from '../transfer-erc20-step';
-import { BigNumber } from 'ethers';
+
 import { RecipeERC20Info, StepInput } from '../../../../models/export-models';
 import { NetworkName } from '@railgun-community/shared-models';
 
@@ -12,9 +12,9 @@ const networkName = NetworkName.Ethereum;
 const toAddress = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045';
 const erc20Info: RecipeERC20Info = {
   tokenAddress: '0xe76C6c83af64e4C60245D8C7dE953DF673a7A33D',
-  decimals: 18,
+  decimals: 18n,
 };
-const amount = BigNumber.from('10000');
+const amount = 10000n;
 
 describe('transfer-erc20-step', () => {
   it('Should create transfer-erc20 step with amount', async () => {
@@ -26,8 +26,8 @@ describe('transfer-erc20-step', () => {
         {
           tokenAddress: erc20Info.tokenAddress,
           decimals: erc20Info.decimals,
-          expectedBalance: BigNumber.from('12000'),
-          minBalance: BigNumber.from('12000'),
+          expectedBalance: 12000n,
+          minBalance: 12000n,
           approvedSpender: undefined,
         },
       ],
@@ -46,7 +46,7 @@ describe('transfer-erc20-step', () => {
         amount,
         recipient: toAddress,
         tokenAddress: erc20Info.tokenAddress,
-        decimals: 18,
+        decimals: 18n,
       },
     ]);
 
@@ -54,25 +54,24 @@ describe('transfer-erc20-step', () => {
     expect(output.outputERC20Amounts).to.deep.equal([
       {
         approvedSpender: undefined,
-        expectedBalance: BigNumber.from('2000'),
-        minBalance: BigNumber.from('2000'),
+        expectedBalance: 2000n,
+        minBalance: 2000n,
         tokenAddress: erc20Info.tokenAddress,
-        decimals: 18,
+        decimals: 18n,
       },
     ]);
 
-    expect(output.spentNFTs).to.deep.equal([]);
+    expect(output.spentNFTs).to.equal(undefined);
     expect(output.outputNFTs).to.deep.equal([]);
 
-    expect(output.feeERC20AmountRecipients).to.deep.equal([]);
+    expect(output.feeERC20AmountRecipients).to.equal(undefined);
 
-    expect(output.populatedTransactions).to.deep.equal([
+    expect(output.crossContractCalls).to.deep.equal([
       {
-        data: '0xa9059cbb000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa960450000000000000000000000000000000000000000000000000000000000002710',
-        to: '0xe76C6c83af64e4C60245D8C7dE953DF673a7A33D',
+        data: '0xc2e9ffd8000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e76c6c83af64e4c60245d8c7de953df673a7a33d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa960450000000000000000000000000000000000000000000000000000000000002710',
+        to: '0x4025ee6512DBbda97049Bcf5AA5D38C54aF6bE8a',
       },
     ]);
-    expect(output.populatedTransactions[0].to).to.equal(erc20Info.tokenAddress);
   });
 
   it('Should create transfer-erc20 step without amount', async () => {
@@ -84,8 +83,8 @@ describe('transfer-erc20-step', () => {
         {
           tokenAddress: erc20Info.tokenAddress,
           decimals: erc20Info.decimals,
-          expectedBalance: BigNumber.from('12000'),
-          minBalance: BigNumber.from('12000'),
+          expectedBalance: 12000n,
+          minBalance: 12000n,
           approvedSpender: undefined,
         },
       ],
@@ -96,25 +95,25 @@ describe('transfer-erc20-step', () => {
     // Transferred
     expect(output.spentERC20Amounts).to.deep.equal([
       {
-        amount: BigNumber.from('12000'),
+        amount: 12000n,
         recipient: toAddress,
         tokenAddress: erc20Info.tokenAddress,
-        decimals: 18,
+        decimals: 18n,
       },
     ]);
 
     // Change
     expect(output.outputERC20Amounts).to.deep.equal([]);
 
-    expect(output.spentNFTs).to.deep.equal([]);
+    expect(output.spentNFTs).to.equal(undefined);
     expect(output.outputNFTs).to.deep.equal([]);
 
-    expect(output.feeERC20AmountRecipients).to.deep.equal([]);
+    expect(output.feeERC20AmountRecipients).to.equal(undefined);
 
-    expect(output.populatedTransactions).to.deep.equal([
+    expect(output.crossContractCalls).to.deep.equal([
       {
-        data: '0xa9059cbb000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa960450000000000000000000000000000000000000000000000000000000000002ee0',
-        to: '0xe76C6c83af64e4C60245D8C7dE953DF673a7A33D',
+        data: '0xc2e9ffd8000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e76c6c83af64e4c60245d8c7de953df673a7a33d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa960450000000000000000000000000000000000000000000000000000000000000000',
+        to: '0x4025ee6512DBbda97049Bcf5AA5D38C54aF6bE8a',
       },
     ]);
   });
@@ -139,8 +138,8 @@ describe('transfer-erc20-step', () => {
         {
           tokenAddress: erc20Info.tokenAddress,
           decimals: erc20Info.decimals,
-          expectedBalance: BigNumber.from('2000'),
-          minBalance: BigNumber.from('2000'),
+          expectedBalance: 2000n,
+          minBalance: 2000n,
           approvedSpender: undefined,
         },
       ],

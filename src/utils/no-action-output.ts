@@ -4,11 +4,10 @@ export const createNoActionStepOutput = (
   input: StepInput,
 ): UnvalidatedStepOutput => {
   return {
-    populatedTransactions: [],
-    spentERC20Amounts: [],
+    crossContractCalls: [],
+
     outputERC20Amounts: input.erc20Amounts,
-    spentNFTs: [],
+
     outputNFTs: input.nfts,
-    feeERC20AmountRecipients: [],
   };
 };

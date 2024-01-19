@@ -1,11 +1,11 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { EmptyRecipe } from '../empty-recipe';
-import { BigNumber } from 'ethers';
 import { RecipeInput } from '../../../models/export-models';
 import { NETWORK_CONFIG, NetworkName } from '@railgun-community/shared-models';
 import { setRailgunFees } from '../../../init';
 import {
+  MOCK_RAILGUN_WALLET_ADDRESS,
   MOCK_SHIELD_FEE_BASIS_POINTS,
   MOCK_UNSHIELD_FEE_BASIS_POINTS,
 } from '../../../test/mocks.test';
@@ -29,13 +29,14 @@ describe('empty-recipe', () => {
     const recipe = new EmptyRecipe();
 
     const recipeInput: RecipeInput = {
+      railgunAddress: MOCK_RAILGUN_WALLET_ADDRESS,
       networkName: networkName,
       erc20Amounts: [
         {
           tokenAddress,
-          decimals: 18,
+          decimals: 18n,
           isBaseToken: false,
-          amount: BigNumber.from('12000'),
+          amount: 12000n,
         },
       ],
       nfts: [],
@@ -45,112 +46,107 @@ describe('empty-recipe', () => {
     expect(output.stepOutputs.length).to.equal(3);
 
     expect(output.stepOutputs[0]).to.deep.equal({
-      name: 'Unshield',
+      name: 'Unshield (Default)',
       description: 'Unshield ERC20s and NFTs from private RAILGUN balance.',
       feeERC20AmountRecipients: [
         {
-          amount: BigNumber.from('30'),
+          amount: 30n,
           recipient: 'RAILGUN Unshield Fee',
           tokenAddress,
-          decimals: 18,
+          decimals: 18n,
         },
       ],
       outputERC20Amounts: [
         {
           tokenAddress,
-          expectedBalance: BigNumber.from('11970'),
-          minBalance: BigNumber.from('11970'),
+          expectedBalance: 11970n,
+          minBalance: 11970n,
           approvedSpender: undefined,
           isBaseToken: false,
-          decimals: 18,
+          decimals: 18n,
         },
       ],
       outputNFTs: [],
-      populatedTransactions: [],
-      spentERC20Amounts: [],
-      spentNFTs: [],
+      crossContractCalls: [],
     });
 
     expect(output.stepOutputs[1]).to.deep.equal({
       name: 'Empty Transfer Base Token',
       description:
         'Used for testing. Sends a 0-token transfer to a null address.',
-      feeERC20AmountRecipients: [],
       outputERC20Amounts: [
         {
           tokenAddress,
-          expectedBalance: BigNumber.from('11970'),
-          minBalance: BigNumber.from('11970'),
+          expectedBalance: 11970n,
+          minBalance: 11970n,
           approvedSpender: undefined,
           isBaseToken: false,
-          decimals: 18,
+          decimals: 18n,
         },
       ],
       outputNFTs: [],
-      populatedTransactions: [
+      crossContractCalls: [
         {
+          data: '0x',
           to: '0x0000000000000000000000000000000000000000',
-          value: BigNumber.from(0),
+          value: 0n,
         },
       ],
-      spentERC20Amounts: [],
-      spentNFTs: [],
     });
 
     expect(output.stepOutputs[2]).to.deep.equal({
-      name: 'Shield',
+      name: 'Shield (Default)',
       description: 'Shield ERC20s and NFTs into private RAILGUN balance.',
       feeERC20AmountRecipients: [
         {
-          amount: BigNumber.from('29'),
+          amount: 29n,
           recipient: 'RAILGUN Shield Fee',
           tokenAddress,
-          decimals: 18,
+          decimals: 18n,
         },
       ],
       outputERC20Amounts: [
         {
           approvedSpender: undefined,
-          expectedBalance: BigNumber.from('11941'),
-          minBalance: BigNumber.from('11941'),
+          expectedBalance: BigInt('11941'),
+          minBalance: BigInt('11941'),
           tokenAddress,
           isBaseToken: false,
-          decimals: 18,
+          decimals: 18n,
+          recipient: undefined,
         },
       ],
       outputNFTs: [],
-      populatedTransactions: [],
-      spentERC20Amounts: [],
-      spentNFTs: [],
+      crossContractCalls: [],
     });
 
     expect(
-      output.erc20Amounts.map(({ tokenAddress }) => tokenAddress),
+      output.erc20AmountRecipients.map(({ tokenAddress }) => tokenAddress),
     ).to.deep.equal(
       [tokenAddress].map(tokenAddress => tokenAddress.toLowerCase()),
     );
 
-    expect(output.nfts).to.deep.equal([]);
+    expect(output.nftRecipients).to.deep.equal([]);
 
-    const populatedTransactionsFlattened = output.stepOutputs.flatMap(
-      stepOutput => stepOutput.populatedTransactions,
+    const crossContractCallsFlattened = output.stepOutputs.flatMap(
+      stepOutput => stepOutput.crossContractCalls,
     );
-    expect(output.populatedTransactions).to.deep.equal(
-      populatedTransactionsFlattened,
+    expect(output.crossContractCalls).to.deep.equal(
+      crossContractCallsFlattened,
     );
 
     expect(output.feeERC20AmountRecipients).to.deep.equal([
       {
-        amount: BigNumber.from('30'),
+        amount: 30n,
         recipient: 'RAILGUN Unshield Fee',
         tokenAddress,
-        decimals: 18,
+        decimals: 18n,
       },
       {
-        amount: BigNumber.from('29'),
+        amount: 29n,
         recipient: 'RAILGUN Shield Fee',
         tokenAddress,
-        decimals: 18,
+        decimals: 18n,
       },
     ]);
   });

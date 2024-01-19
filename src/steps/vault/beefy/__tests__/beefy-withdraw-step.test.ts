@@ -1,6 +1,5 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { BigNumber } from 'ethers';
 import { NetworkName } from '@railgun-community/shared-models';
 import { StepInput } from '../../../../models/export-models';
 import { BeefyVaultData } from '../../../../api/beefy/beefy-api';
@@ -19,13 +18,16 @@ const vault: BeefyVaultData = {
   apy: 5.0,
   chain: 'ethereum',
   network: 'ethereum',
+  depositERC20Symbol: 'RAIL',
   depositERC20Address: tokenAddress,
-  depositERC20Decimals: 18,
-  vaultTokenAddress: '0x40324434a0b53dd1ED167Ba30dcB6B4bd7a9536d',
+  depositERC20Decimals: 18n,
+  vaultERC20Symbol: 'mooHermesMETIS-m.USDC',
+  vaultERC20Address: '0x40324434a0b53dd1ED167Ba30dcB6B4bd7a9536d',
   vaultContractAddress: '0x40324434a0b53dd1ED167Ba30dcB6B4bd7a9536d',
-  vaultRate: '2000000000000000000', // 2x
-  depositFee: 0,
-  withdrawFee: 0.1,
+  vaultRate: BigInt('2000000000000000000'), // 2x
+  depositFeeBasisPoints: 0n,
+  withdrawFeeBasisPoints: 1000n,
+  isActive: true,
 };
 
 describe('beefy-withdraw-step', () => {
@@ -36,10 +38,10 @@ describe('beefy-withdraw-step', () => {
       networkName,
       erc20Amounts: [
         {
-          tokenAddress: vault.vaultTokenAddress,
-          decimals: 18,
-          expectedBalance: BigNumber.from('10000'),
-          minBalance: BigNumber.from('10000'),
+          tokenAddress: vault.vaultERC20Address,
+          decimals: 18n,
+          expectedBalance: 10000n,
+          minBalance: 10000n,
           approvedSpender: undefined,
         },
       ],
@@ -55,10 +57,10 @@ describe('beefy-withdraw-step', () => {
     // Withdrawn
     expect(output.spentERC20Amounts).to.deep.equal([
       {
-        amount: BigNumber.from('10000'),
+        amount: 10000n,
         recipient: 'VAULT_NAME Vault',
-        tokenAddress: vault.vaultTokenAddress,
-        decimals: 18,
+        tokenAddress: vault.vaultERC20Address,
+        decimals: 18n,
       },
     ]);
 
@@ -66,26 +68,26 @@ describe('beefy-withdraw-step', () => {
     expect(output.outputERC20Amounts).to.deep.equal([
       {
         approvedSpender: undefined,
-        expectedBalance: BigNumber.from('18000'),
-        minBalance: BigNumber.from('18000'),
+        expectedBalance: 18000n,
+        minBalance: 18000n,
         tokenAddress,
-        decimals: 18,
+        decimals: 18n,
       },
     ]);
 
-    expect(output.spentNFTs).to.deep.equal([]);
+    expect(output.spentNFTs).to.equal(undefined);
     expect(output.outputNFTs).to.deep.equal([]);
 
     expect(output.feeERC20AmountRecipients).to.deep.equal([
       {
-        decimals: 18,
+        decimals: 18n,
         tokenAddress,
-        amount: BigNumber.from('2000'),
-        recipient: 'Beefy Vault Withdraw Fee',
+        amount: 2000n,
+        recipient: 'VAULT_NAME Vault Withdraw Fee',
       },
     ]);
 
-    expect(output.populatedTransactions).to.deep.equal([
+    expect(output.crossContractCalls).to.deep.equal([
       {
         data: '0x853828b6',
         to: '0x40324434a0b53dd1ED167Ba30dcB6B4bd7a9536d',
@@ -102,9 +104,9 @@ describe('beefy-withdraw-step', () => {
       erc20Amounts: [
         {
           tokenAddress,
-          decimals: 18,
-          expectedBalance: BigNumber.from('12000'),
-          minBalance: BigNumber.from('12000'),
+          decimals: 18n,
+          expectedBalance: 12000n,
+          minBalance: 12000n,
           approvedSpender: vault.vaultContractAddress,
         },
       ],

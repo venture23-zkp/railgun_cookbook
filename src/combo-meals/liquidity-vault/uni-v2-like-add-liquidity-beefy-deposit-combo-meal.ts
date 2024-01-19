@@ -1,21 +1,24 @@
-import { BaseProvider } from '@ethersproject/providers';
 import {
+  ComboMealConfig,
   RecipeERC20Amount,
   RecipeERC20Info,
   UniswapV2Fork,
 } from '../../models/export-models';
 import { Recipe } from '../../recipes';
 import { UniV2LikeAddLiquidityRecipe } from '../../recipes/liquidity/uni-v2-like/uni-v2-like-add-liquidity-recipe';
-import { BeefyDepositRecipe } from '../../recipes/vault/beefy-deposit-recipe';
+import { BeefyDepositRecipe } from '../../recipes/vault/beefy/beefy-deposit-recipe';
 import { ComboMeal } from '../combo-meal';
-import { UniV2LikeSDK } from '../../api/uniswap/uni-v2-like-sdk';
+import { UniV2LikeSDK } from '../../api/uni-v2-like/uni-v2-like-sdk';
 import { NetworkName } from '@railgun-community/shared-models';
+import { Provider } from 'ethers';
+import { MIN_GAS_LIMIT_COMBO_MEAL } from '../../models/min-gas-limits';
 
 export class UniV2LikeAddLiquidity_BeefyDeposit_ComboMeal extends ComboMeal {
-  readonly config = {
+  readonly config: ComboMealConfig = {
     name: '[NAME] Add Liquidity + Beefy Vault Deposit Combo Meal',
     description:
       'Adds liquidity to a [NAME] Pool and deposits the LP tokens into a Beefy Vault.',
+    minGasLimit: MIN_GAS_LIMIT_COMBO_MEAL,
   };
 
   private readonly uniV2LikeAddLiquidityRecipe: UniV2LikeAddLiquidityRecipe;
@@ -26,9 +29,9 @@ export class UniV2LikeAddLiquidity_BeefyDeposit_ComboMeal extends ComboMeal {
     uniswapV2Fork: UniswapV2Fork,
     erc20InfoA: RecipeERC20Info,
     erc20InfoB: RecipeERC20Info,
-    slippagePercentage: number,
+    slippageBasisPoints: bigint,
     vaultID: string,
-    provider: BaseProvider,
+    provider: Provider,
   ) {
     super();
 
@@ -36,7 +39,7 @@ export class UniV2LikeAddLiquidity_BeefyDeposit_ComboMeal extends ComboMeal {
       uniswapV2Fork,
       erc20InfoA,
       erc20InfoB,
-      slippagePercentage,
+      slippageBasisPoints,
       provider,
     );
     this.beefyDepositRecipe = new BeefyDepositRecipe(vaultID);

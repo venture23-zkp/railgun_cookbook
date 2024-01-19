@@ -1,18 +1,19 @@
 import {
   RecipeERC20AmountRecipient,
   RecipeERC20Info,
+  StepConfig,
   StepInput,
   StepOutputERC20Amount,
   UnvalidatedStepOutput,
 } from '../../../models/export-models';
 import { compareERC20Info, isApprovedForSpender } from '../../../utils/token';
 import { Step } from '../../step';
-import { BeefyVaultData } from '../../../api/beefy';
-import { BeefyVaultContract } from '../../../contract/vault/beefy-vault-contract';
+import { BEEFY_VAULT_ERC20_DECIMALS, BeefyVaultData } from '../../../api/beefy';
+import { BeefyVaultContract } from '../../../contract/vault/beefy/beefy-vault-contract';
 import { calculateOutputsForBeefyDeposit } from './beefy-util';
 
 export class BeefyDepositStep extends Step {
-  readonly config = {
+  readonly config: StepConfig = {
     name: 'Beefy Vault Deposit',
     description: 'Deposits into a yield-bearing Beefy Vault.',
   };
@@ -32,9 +33,7 @@ export class BeefyDepositStep extends Step {
       depositERC20Address,
       depositERC20Decimals,
       vaultContractAddress,
-      vaultTokenAddress,
-      vaultRate,
-      depositFee,
+      vaultERC20Address,
     } = this.vault;
     const { erc20Amounts } = input;
 
@@ -52,7 +51,7 @@ export class BeefyDepositStep extends Step {
       );
 
     const contract = new BeefyVaultContract(vaultContractAddress);
-    const populatedTransaction = await contract.createDepositAll();
+    const crossContractCall = await contract.createDepositAll();
 
     const {
       depositFeeAmount,
@@ -60,9 +59,7 @@ export class BeefyDepositStep extends Step {
       receivedVaultTokenAmount,
     } = calculateOutputsForBeefyDeposit(
       erc20AmountForStep.expectedBalance,
-      depositFee,
-      depositERC20Decimals,
-      vaultRate,
+      this.vault,
     );
 
     const spentERC20AmountRecipient: RecipeERC20AmountRecipient = {
@@ -71,25 +68,30 @@ export class BeefyDepositStep extends Step {
       recipient: `${vaultName} Vault`,
     };
     const outputERC20Amount: StepOutputERC20Amount = {
-      tokenAddress: vaultTokenAddress,
-      decimals: depositERC20Decimals,
+      tokenAddress: vaultERC20Address,
+      decimals: BEEFY_VAULT_ERC20_DECIMALS,
       expectedBalance: receivedVaultTokenAmount,
       minBalance: receivedVaultTokenAmount,
       approvedSpender: undefined,
     };
-    const feeERC20Amount: RecipeERC20AmountRecipient = {
-      ...depositERC20Info,
-      amount: depositFeeAmount,
-      recipient: `${vaultName} Vault Deposit Fee`,
-    };
+    const feeERC20AmountRecipients: RecipeERC20AmountRecipient[] =
+      depositFeeAmount > 0n
+        ? [
+            {
+              tokenAddress: depositERC20Address,
+              decimals: depositERC20Decimals,
+              amount: depositFeeAmount,
+              recipient: `${vaultName} Vault Deposit Fee`,
+            },
+          ]
+        : [];
 
     return {
-      populatedTransactions: [populatedTransaction],
+      crossContractCalls: [crossContractCall],
       spentERC20Amounts: [spentERC20AmountRecipient],
       outputERC20Amounts: [outputERC20Amount, ...unusedERC20Amounts],
-      spentNFTs: [],
       outputNFTs: input.nfts,
-      feeERC20AmountRecipients: [feeERC20Amount],
+      feeERC20AmountRecipients,
     };
   }
 }

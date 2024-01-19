@@ -1,18 +1,21 @@
-import { BigNumber } from 'ethers';
-import { StepInput, UnvalidatedStepOutput } from '../../models/export-models';
+import {
+  StepConfig,
+  StepInput,
+  UnvalidatedStepOutput,
+} from '../../models/export-models';
 import { Step } from '../step';
-import { PopulatedTransaction } from '@ethersproject/contracts';
 import { ZERO_ADDRESS } from '../../models/constants';
+import { ContractTransaction } from 'ethers';
 
 export class EmptyTransferBaseTokenStep extends Step {
-  readonly config = {
+  readonly config: StepConfig = {
     name: 'Empty Transfer Base Token',
     description:
       'Used for testing. Sends a 0-token transfer to a null address.',
   };
 
   private readonly toAddress = ZERO_ADDRESS;
-  private readonly amount = BigNumber.from(0);
+  private readonly amount = 0n;
 
   constructor() {
     super();
@@ -24,20 +27,18 @@ export class EmptyTransferBaseTokenStep extends Step {
     const { erc20Amounts } = input;
     const unusedERC20Amounts = erc20Amounts;
 
-    const populatedTransactions: PopulatedTransaction[] = [
+    const crossContractCalls: ContractTransaction[] = [
       {
+        data: '0x',
         to: this.toAddress,
         value: this.amount,
       },
     ];
 
     return {
-      populatedTransactions,
-      spentERC20Amounts: [],
+      crossContractCalls,
       outputERC20Amounts: unusedERC20Amounts,
-      spentNFTs: [],
       outputNFTs: input.nfts,
-      feeERC20AmountRecipients: [],
     };
   }
 }

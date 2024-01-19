@@ -1,8 +1,12 @@
-import { NetworkName } from '@railgun-community/shared-models';
+import {
+  NetworkName,
+  isDefined,
+  removeUndefineds,
+} from '@railgun-community/shared-models';
 import { BeefyApiEndpoint, getBeefyAPIData } from './beefy-fetch';
 import { compareTokenAddress } from '../../utils';
 import { CookbookDebug } from '../../utils/cookbook-debug';
-import { removeUndefineds } from '@railgun-community/quickstart';
+import { numToBasisPoints } from '../../utils/basis-points';
 
 export type BeefyNetwork =
   | 'ethereum'
@@ -42,37 +46,44 @@ type BeefyVaultAPIData = {
   pricePerFullShare: string;
 };
 
-type BeefyFeesAPIData = Record<
-  string,
-  {
-    performance: {
-      total: number;
-      call: number;
-      strategist: number;
-      treasury: number;
-      stakers: number;
-    };
-    withdraw?: number;
-    deposit?: number;
-    lastUpdated: number;
-  }
->;
+type BeefyFeesAPIData = {
+  performance: {
+    total: number;
+    call: number;
+    strategist: number;
+    treasury: number;
+    stakers: number;
+  };
+  withdraw?: number;
+  deposit?: number;
+  lastUpdated: number;
+};
+
+type BeefyFeesAPIDataMap = Record<string, BeefyFeesAPIData>;
 
 type BeefyAPYAPIData = Record<string, number>;
+
+type BeefyTVLAPIData = Record<string, Record<string, number>>;
+
+export const BEEFY_VAULT_ERC20_DECIMALS = 18n;
 
 export type BeefyVaultData = {
   vaultID: string;
   vaultName: string;
   apy: number;
+  // tvlUSD: number;
   chain: BeefyChain;
   network: BeefyNetwork;
+  depositERC20Symbol: string;
   depositERC20Address: string;
-  depositERC20Decimals: number;
-  vaultTokenAddress: string;
+  depositERC20Decimals: bigint;
+  vaultERC20Symbol: string;
+  vaultERC20Address: string;
   vaultContractAddress: string;
-  vaultRate: string;
-  depositFee: number;
-  withdrawFee: number;
+  vaultRate: bigint;
+  depositFeeBasisPoints: bigint;
+  withdrawFeeBasisPoints: bigint;
+  isActive: boolean;
 };
 
 export class BeefyAPI {
@@ -114,33 +125,41 @@ export class BeefyAPI {
   private static cacheExpired(): boolean {
     // 3 min cache
     return (
-      !this.cacheTimestamp || this.cacheTimestamp < Date.now() - 3 * 60 * 1000
+      !isDefined(this.cacheTimestamp) ||
+      this.cacheTimestamp < Date.now() - 3 * 60 * 1000
     );
   }
 
   private static async getBeefyVaultDataAllChains(
     skipCache: boolean,
+    includeInactiveVaults = false,
   ): Promise<BeefyVaultData[]> {
     if (!skipCache && this.cachedVaultData && !this.cacheExpired()) {
       return this.cachedVaultData;
     }
 
-    const beefyVaultAPIData = await getBeefyAPIData<BeefyVaultAPIData[]>(
-      BeefyApiEndpoint.GetVaults,
-    );
-    const beefyFeesAPIData = await getBeefyAPIData<BeefyFeesAPIData>(
-      BeefyApiEndpoint.GetFees,
-    );
-    const beefyAPYAPIData = await this.getBeefyVaultAPYs();
+    const [
+      beefyVaultAPIData,
+      beefyFeesAPIData,
+      beefyAPYAPIData,
+      // beefyTVLAPIData,
+    ] = await Promise.all([
+      getBeefyAPIData<BeefyVaultAPIData[]>(BeefyApiEndpoint.GetVaults),
+      getBeefyAPIData<BeefyFeesAPIDataMap>(BeefyApiEndpoint.GetFees),
+      this.getBeefyVaultAPYs(),
+      // this.getBeefyVaultTVLs(),
+    ]);
 
     const vaultData: BeefyVaultData[] = removeUndefineds(
       beefyVaultAPIData.map(vaultAPIData => {
         const feesData = beefyFeesAPIData[vaultAPIData.id];
         const apy = beefyAPYAPIData[vaultAPIData.id];
+        // const tvlUSD = beefyTVLAPIData[String(chainID)][vaultAPIData.id]; // Requires chain ID.
         if (feesData == null || apy == null) {
           return undefined;
         }
-        if (vaultAPIData.status !== 'active') {
+        const isActive = vaultAPIData.status === 'active';
+        if (!includeInactiveVaults && !isActive) {
           return undefined;
         }
         if (
@@ -150,20 +169,12 @@ export class BeefyAPI {
         ) {
           return undefined;
         }
-        return {
-          vaultID: vaultAPIData.id,
-          vaultName: vaultAPIData.name,
+        return this.convertAPIDataToBeefyVaultData(
+          vaultAPIData,
+          feesData,
           apy,
-          chain: vaultAPIData.chain,
-          network: vaultAPIData.network,
-          depositERC20Address: vaultAPIData.tokenAddress.toLowerCase(),
-          depositERC20Decimals: vaultAPIData.tokenDecimals,
-          vaultTokenAddress: vaultAPIData.earnedTokenAddress.toLowerCase(),
-          vaultContractAddress: vaultAPIData.earnContractAddress.toLowerCase(),
-          vaultRate: vaultAPIData.pricePerFullShare,
-          depositFee: feesData?.deposit ?? 0,
-          withdrawFee: feesData?.withdraw ?? 0,
-        };
+          isActive,
+        );
       }),
     );
 
@@ -173,6 +184,56 @@ export class BeefyAPI {
     return vaultData;
   }
 
+  static async getBeefyVaultAPY(vaultID: string): Promise<number> {
+    const apys = await this.getBeefyVaultAPYs();
+    return apys[vaultID];
+  }
+
+  private static convertAPIDataToBeefyVaultData(
+    vaultAPIData: BeefyVaultAPIData,
+    feesData: BeefyFeesAPIData,
+    apy: number,
+    isActive: boolean,
+  ): Optional<BeefyVaultData> {
+    try {
+      const vaultInfo: BeefyVaultData = {
+        vaultID: vaultAPIData.id,
+        vaultName: vaultAPIData.name,
+        apy,
+        // tvlUSD,
+        chain: vaultAPIData.chain,
+        network: vaultAPIData.network,
+        depositERC20Symbol: vaultAPIData.token,
+        depositERC20Address: vaultAPIData.tokenAddress.toLowerCase(),
+        depositERC20Decimals: BigInt(vaultAPIData.tokenDecimals),
+        vaultERC20Symbol: vaultAPIData.earnedToken,
+        vaultERC20Address: vaultAPIData.earnedTokenAddress.toLowerCase(),
+        vaultContractAddress: vaultAPIData.earnContractAddress.toLowerCase(),
+        vaultRate: this.parseVaultRate(vaultAPIData.pricePerFullShare),
+        depositFeeBasisPoints: numToBasisPoints(feesData?.deposit),
+        withdrawFeeBasisPoints: numToBasisPoints(feesData?.withdraw),
+        isActive,
+      };
+      return vaultInfo;
+    } catch (err) {
+      if (!(err instanceof Error)) {
+        throw err;
+      }
+      // CookbookDebug.error(
+      //   new Error(
+      //     `Could not parse Beefy Vault data for ${vaultAPIData.id}: ${err.message}`,
+      //   ),
+      // );
+      return undefined;
+    }
+  }
+
+  private static parseVaultRate(pricePerFullShare: string): bigint {
+    // NOTE: Some inactive vaults currently have pricePerFullShare in scientific notation.
+    // This will crash, which returns undefined in the above try/catch.
+    return BigInt(pricePerFullShare);
+  }
+
   private static async getBeefyVaultAPYs(): Promise<BeefyAPYAPIData> {
     const beefyAPYAPIData = await getBeefyAPIData<BeefyAPYAPIData>(
       BeefyApiEndpoint.GetAPYs,
@@ -180,14 +241,25 @@ export class BeefyAPI {
     return beefyAPYAPIData;
   }
 
+  private static async getBeefyVaultTVLs(): Promise<BeefyTVLAPIData> {
+    const beefyTVLAPIData = await getBeefyAPIData<BeefyTVLAPIData>(
+      BeefyApiEndpoint.GetTVLs,
+    );
+    return beefyTVLAPIData;
+  }
+
   static async getFilteredBeefyVaults(
     networkName: NetworkName,
     skipCache: boolean,
+    includeInactiveVaults: boolean,
     depositERC20Address?: string,
-    vaultTokenAddress?: string,
+    vaultERC20Address?: string,
   ): Promise<BeefyVaultData[]> {
     try {
-      const beefyVaultData = await this.getBeefyVaultDataAllChains(skipCache);
+      const beefyVaultData = await this.getBeefyVaultDataAllChains(
+        skipCache,
+        includeInactiveVaults,
+      );
 
       const beefyChainInfo = this.getBeefyChainInfoForNetwork(networkName);
       let filtered = beefyVaultData.filter(
@@ -196,14 +268,14 @@ export class BeefyAPI {
           vault.network === beefyChainInfo.network,
       );
 
-      if (depositERC20Address) {
+      if (isDefined(depositERC20Address)) {
         filtered = filtered.filter(vault =>
           compareTokenAddress(vault.depositERC20Address, depositERC20Address),
         );
       }
-      if (vaultTokenAddress) {
+      if (isDefined(vaultERC20Address)) {
         filtered = filtered.filter(vault =>
-          compareTokenAddress(vault.vaultTokenAddress, vaultTokenAddress),
+          compareTokenAddress(vault.vaultERC20Address, vaultERC20Address),
         );
       }
 
@@ -224,6 +296,7 @@ export class BeefyAPI {
     const beefyVaults = await this.getFilteredBeefyVaults(
       networkName,
       true, // skipCache
+      true, // includeInactiveVaults
     );
 
     const beefyVault = beefyVaults.find(vault => vault.vaultID === vaultID);
@@ -231,6 +304,9 @@ export class BeefyAPI {
       throw new Error(
         `Beefy vault with fees/apy data missing for ID: ${vaultID}.`,
       );
+    }
+    if (!beefyVault.isActive) {
+      throw new Error(`Beefy vault is not active for ID: ${vaultID}.`);
     }
 
     return beefyVault;

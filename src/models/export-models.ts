@@ -2,8 +2,7 @@ import {
   NetworkName,
   RailgunNFTAmount,
 } from '@railgun-community/shared-models';
-import { PopulatedTransaction } from '@ethersproject/contracts';
-import { BigNumber } from '@ethersproject/bignumber';
+import { ContractTransaction } from 'ethers';
 
 export type CookbookDebugger = {
   log: (msg: string) => void;
@@ -12,51 +11,65 @@ export type CookbookDebugger = {
 
 export type RecipeERC20Info = {
   tokenAddress: string;
-  decimals: number;
+  decimals: bigint;
   isBaseToken?: boolean;
 };
 
 export type RecipeERC20Amount = RecipeERC20Info & {
-  amount: BigNumber;
+  amount: bigint;
+  recipient?: string;
 };
 
 export type RecipeERC20AmountRecipient = RecipeERC20Amount & {
   recipient: string;
 };
 
+export type RecipeNFTInfo = RailgunNFTAmount & {
+  owns?: string;
+  recipient?: string;
+};
+
+export type RecipeNFTRecipient = RailgunNFTAmount & {
+  recipient: string;
+};
+
 export type RecipeInput = {
   networkName: NetworkName;
+  railgunAddress: string;
   erc20Amounts: RecipeERC20Amount[];
-  nfts: RailgunNFTAmount[];
+  nfts: RecipeNFTInfo[];
 };
 
 export type StepInput = {
   networkName: NetworkName;
   erc20Amounts: StepOutputERC20Amount[];
-  nfts: RailgunNFTAmount[];
+  nfts: RecipeNFTInfo[];
 };
 
 export type RecipeOutput = {
+  name: string;
   stepOutputs: StepOutput[];
-  populatedTransactions: PopulatedTransaction[];
-  erc20Amounts: RecipeERC20Amount[];
-  nfts: RailgunNFTAmount[];
+  crossContractCalls: ContractTransaction[];
+  erc20AmountRecipients: RecipeERC20AmountRecipient[];
+  nftRecipients: RecipeNFTRecipient[];
   feeERC20AmountRecipients: RecipeERC20AmountRecipient[];
+  minGasLimit: bigint;
 };
 
 export type StepOutputERC20Amount = RecipeERC20Info & {
-  expectedBalance: BigNumber;
-  minBalance: BigNumber;
+  expectedBalance: bigint;
+  minBalance: bigint;
   approvedSpender: Optional<string>;
+  recipient?: string;
 };
 
 export type UnvalidatedStepOutput = {
-  populatedTransactions: PopulatedTransaction[];
-  spentERC20Amounts: RecipeERC20AmountRecipient[];
+  crossContractCalls: ContractTransaction[];
   outputERC20Amounts: StepOutputERC20Amount[];
-  spentNFTs: RailgunNFTAmount[];
-  outputNFTs: RailgunNFTAmount[];
-  feeERC20AmountRecipients: RecipeERC20AmountRecipient[];
+  spentERC20Amounts?: RecipeERC20AmountRecipient[];
+  spentNFTs?: RecipeNFTInfo[];
+  outputNFTs: RecipeNFTInfo[];
+  feeERC20AmountRecipients?: RecipeERC20AmountRecipient[];
 };
 
 export type StepOutput = UnvalidatedStepOutput & {
@@ -73,21 +86,23 @@ export type StepConfig = {
 export type RecipeConfig = {
   name: string;
   description: string;
+  minGasLimit: bigint;
 };
 
 export type ComboMealConfig = {
   name: string;
   description: string;
+  minGasLimit: bigint;
 };
 
 export type SwapQuoteData = {
-  price: BigNumber;
-  guaranteedPrice: BigNumber;
+  price: bigint;
+  guaranteedPrice: bigint;
   buyERC20Amount: RecipeERC20Amount;
-  minimumBuyAmount: BigNumber;
+  minimumBuyAmount: bigint;
   spender: Optional<string>;
-  populatedTransaction: PopulatedTransaction;
-  slippagePercentage: number;
+  crossContractCall: ContractTransaction;
+  slippageBasisPoints: bigint;
   sellTokenAddress: string;
   sellTokenValue: string;
 };
@@ -96,7 +111,7 @@ export type SwapQuoteParams = {
   networkName: NetworkName;
   sellERC20Amount: RecipeERC20Amount;
   buyERC20Info: RecipeERC20Info;
-  slippagePercentage: number;
+  slippageBasisPoints: bigint;
   isRailgun: boolean;
 };
 
@@ -108,7 +123,7 @@ export type RecipeAddLiquidityData = {
   erc20AmountA: RecipeERC20Amount;
   erc20AmountB: RecipeERC20Amount;
   expectedLPAmount: RecipeERC20Amount;
-  slippagePercentage: number;
+  slippageBasisPoints: bigint;
   routerContractAddress: string;
   deadlineTimestamp: number;
 };
@@ -117,12 +132,30 @@ export type RecipeRemoveLiquidityData = {
   lpERC20Amount: RecipeERC20Amount;
   expectedERC20AmountA: RecipeERC20Amount;
   expectedERC20AmountB: RecipeERC20Amount;
-  slippagePercentage: number;
+  slippageBasisPoints: bigint;
   routerContractAddress: string;
   deadlineTimestamp: number;
 };
 
+export type RecipeCreateAccessCard = {
+  encryptedNFTMetadata: string;
+};
+
 export enum UniswapV2Fork {
   Uniswap = 'Uniswap',
-  Sushiswap = 'Sushiswap',
+  SushiSwap = 'SushiSwap',
+  PancakeSwap = 'PancakeSwap',
+  Quickswap = 'Quickswap',
 }
+
+export type AccessCardMetadata = {
+  name: string;
+  description: string;
+};
+
+export type AaveV3TokenData = {
+  tokenAddress: string;
+  amount: Optional<bigint>;
+  decimals: bigint;
+  isBaseToken?: boolean;
+};

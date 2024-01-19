@@ -1,7 +1,7 @@
-import { BigNumber } from '@ethersproject/bignumber';
 import {
   RecipeERC20AmountRecipient,
   RecipeERC20Info,
+  StepConfig,
   StepInput,
   StepOutputERC20Amount,
   SwapQuoteData,
@@ -11,7 +11,7 @@ import { compareERC20Info, isApprovedForSpender } from '../../../utils/token';
 import { Step } from '../../step';
 
 export class ZeroXSwapStep extends Step {
-  readonly config = {
+  readonly config: StepConfig = {
     name: '0x Exchange Swap',
     description: 'Swaps two ERC20 tokens using 0x Exchange DEX Aggregator.',
     hasNonDeterministicOutput: true,
@@ -32,13 +32,13 @@ export class ZeroXSwapStep extends Step {
     const {
       buyERC20Amount,
       minimumBuyAmount,
-      populatedTransaction,
+      crossContractCall,
       sellTokenValue,
       spender,
     } = this.quote;
     const { erc20Amounts } = input;
 
-    const sellERC20Amount = BigNumber.from(sellTokenValue);
+    const sellERC20Amount = BigInt(sellTokenValue);
     const { erc20AmountForStep, unusedERC20Amounts } =
       this.getValidInputERC20Amount(
         erc20Amounts,
@@ -63,12 +63,10 @@ export class ZeroXSwapStep extends Step {
     };
 
     return {
-      populatedTransactions: [populatedTransaction],
+      crossContractCalls: [crossContractCall],
       spentERC20Amounts: [sellERC20AmountRecipient],
       outputERC20Amounts: [outputBuyERC20Amount, ...unusedERC20Amounts],
-      spentNFTs: [],
       outputNFTs: input.nfts,
-      feeERC20AmountRecipients: [],
     };
   }
 }

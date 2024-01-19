@@ -5,16 +5,17 @@ import {
   StepOutputERC20Amount,
   UniswapV2Fork,
   UnvalidatedStepOutput,
+  StepConfig,
 } from '../../../models/export-models';
 import { compareERC20Info, isApprovedForSpender } from '../../../utils';
 import { Step } from '../../step';
-import { UniV2LikeSDK } from '../../../api/uniswap/uni-v2-like-sdk';
+import { UniV2LikeSDK } from '../../../api/uni-v2-like/uni-v2-like-sdk';
 import { minBalanceAfterSlippage } from '../../../utils/number';
 import { UniV2LikeRouterContract } from '../../../contract/liquidity/uni-v2-like-router-contract';
 import { NETWORK_CONFIG } from '@railgun-community/shared-models';
 
 export class UniV2LikeRemoveLiquidityStep extends Step {
-  readonly config = {
+  readonly config: StepConfig = {
     name: '[Name] Remove Liquidity',
     description: 'Removes liquidity from a [NAME] Pool.',
     hasNonDeterministicOutput: true,
@@ -45,7 +46,7 @@ export class UniV2LikeRemoveLiquidityStep extends Step {
       lpERC20Amount,
       expectedERC20AmountA,
       expectedERC20AmountB,
-      slippagePercentage,
+      slippageBasisPoints,
       deadlineTimestamp,
     } = this.removeLiquidityData;
 
@@ -62,15 +63,15 @@ export class UniV2LikeRemoveLiquidityStep extends Step {
 
     const minAmountA = minBalanceAfterSlippage(
       expectedERC20AmountA.amount,
-      slippagePercentage,
+      slippageBasisPoints,
     );
     const minAmountB = minBalanceAfterSlippage(
       expectedERC20AmountB.amount,
-      slippagePercentage,
+      slippageBasisPoints,
     );
 
     const contract = new UniV2LikeRouterContract(routerContractAddress);
-    const populatedTransaction = await contract.createRemoveLiquidity(
+    const crossContractCall = await contract.createRemoveLiquidity(
       expectedERC20AmountA.tokenAddress,
       expectedERC20AmountB.tokenAddress,
       erc20AmountForStep.expectedBalance,
@@ -106,16 +107,14 @@ export class UniV2LikeRemoveLiquidityStep extends Step {
     };
 
     return {
-      populatedTransactions: [populatedTransaction],
+      crossContractCalls: [crossContractCall],
       spentERC20Amounts: [spendERC20AmountRecipient],
       outputERC20Amounts: [
         outputERC20AmountA,
         outputERC20AmountB,
         ...unusedERC20Amounts,
       ],
-      spentNFTs: [],
       outputNFTs: input.nfts,
-      feeERC20AmountRecipients: [],
     };
   }
 }

@@ -1,7 +1,6 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { ZeroXSwapRecipe } from '../zero-x-swap-recipe';
-import { BigNumber } from 'ethers';
 import {
   RecipeERC20Info,
   RecipeInput,
@@ -12,6 +11,7 @@ import { setRailgunFees } from '../../../init';
 import { ZeroXQuote } from '../../../api/zero-x';
 import Sinon, { SinonStub } from 'sinon';
 import {
+  MOCK_RAILGUN_WALLET_ADDRESS,
   MOCK_SHIELD_FEE_BASIS_POINTS,
   MOCK_UNSHIELD_FEE_BASIS_POINTS,
 } from '../../../test/mocks.test';
@@ -28,39 +28,39 @@ const buyTokenAddress = testConfig.contractsEthereum.rail.toLowerCase();
 
 const sellToken: RecipeERC20Info = {
   tokenAddress: sellTokenAddress,
-  decimals: 18,
+  decimals: 18n,
   isBaseToken: false,
 };
 
 const buyToken: RecipeERC20Info = {
   tokenAddress: buyTokenAddress,
-  decimals: 18,
+  decimals: 18n,
 };
 
-const slippagePercentage = 0.01;
+const slippageBasisPoints = BigInt(100);
 
 const quote: SwapQuoteData = {
   sellTokenValue: '10000',
   spender,
-  populatedTransaction: {
+  crossContractCall: {
     to: '0x1234',
-    value: BigNumber.from(0),
+    value: 0n,
     data: '0x5678',
   },
   buyERC20Amount: {
     tokenAddress: buyTokenAddress,
-    decimals: 18,
-    amount: BigNumber.from('500'),
+    decimals: 18n,
+    amount: 500n,
   },
-  minimumBuyAmount: BigNumber.from('495'),
+  minimumBuyAmount: 495n,
 
   // base token - 0x's filler address
   sellTokenAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
 
   // Unused
-  price: BigNumber.from(0),
-  guaranteedPrice: BigNumber.from(0),
-  slippagePercentage,
+  price: 0n,
+  guaranteedPrice: 0n,
+  slippageBasisPoints,
 };
 
 let stub0xQuote: SinonStub;
@@ -74,24 +74,29 @@ describe('zero-x-swap-recipe', () => {
     );
     stub0xQuote = Sinon.stub(ZeroXQuote, 'getSwapQuote').resolves(quote);
 
-    ZeroXConfig.PROXY_API_DOMAIN = undefined;
+    ZeroXConfig.PROXY_API_DOMAIN = testConfig.zeroXProxyApiDomain;
   });
 
   after(() => {
-    stub0xQuote.resetBehavior();
+    stub0xQuote.restore();
   });
 
-  it('Should create zero-x-swap-recipe with amount', async () => {
-    const recipe = new ZeroXSwapRecipe(sellToken, buyToken, slippagePercentage);
+  it('Should create zero-x-swap-recipe with amount and change', async () => {
+    const recipe = new ZeroXSwapRecipe(
+      sellToken,
+      buyToken,
+      slippageBasisPoints,
+    );
 
     const recipeInput: RecipeInput = {
+      railgunAddress: MOCK_RAILGUN_WALLET_ADDRESS,
       networkName: networkName,
       erc20Amounts: [
         {
           tokenAddress: sellTokenAddress,
-          decimals: 18,
+          decimals: 18n,
           isBaseToken: false,
-          amount: BigNumber.from('12000'),
+          amount: 12000n,
         },
       ],
       nfts: [],
@@ -101,197 +106,195 @@ describe('zero-x-swap-recipe', () => {
     expect(output.stepOutputs.length).to.equal(4);
 
     expect(recipe.getBuySellAmountsFromRecipeOutput(output)).to.deep.equal({
-      sellFee: BigNumber.from('30'),
-      buyAmount: BigNumber.from('499'),
-      buyMinimum: BigNumber.from('494'),
-      buyFee: BigNumber.from('1'),
+      sellUnshieldFee: 30n,
+      buyAmount: 499n,
+      buyMinimum: 494n,
+      buyShieldFee: 1n,
     });
 
     expect(output.stepOutputs[0]).to.deep.equal({
-      name: 'Unshield',
+      name: 'Unshield (Default)',
       description: 'Unshield ERC20s and NFTs from private RAILGUN balance.',
       feeERC20AmountRecipients: [
         {
-          amount: BigNumber.from('30'),
+          amount: 30n,
           recipient: 'RAILGUN Unshield Fee',
           tokenAddress: sellTokenAddress,
-          decimals: 18,
+          decimals: 18n,
         },
       ],
       outputERC20Amounts: [
         {
           tokenAddress: sellTokenAddress,
-          expectedBalance: BigNumber.from('11970'),
-          minBalance: BigNumber.from('11970'),
+          expectedBalance: 11970n,
+          minBalance: 11970n,
           approvedSpender: undefined,
           isBaseToken: false,
-          decimals: 18,
+          decimals: 18n,
         },
       ],
       outputNFTs: [],
-      populatedTransactions: [],
-      spentERC20Amounts: [],
-      spentNFTs: [],
+      crossContractCalls: [],
     });
 
     expect(output.stepOutputs[1]).to.deep.equal({
       name: 'Approve ERC20 Spender',
       description: 'Approves ERC20 for spender contract.',
-      feeERC20AmountRecipients: [],
       outputERC20Amounts: [
         {
           approvedSpender: spender,
-          expectedBalance: BigNumber.from('11970'),
-          minBalance: BigNumber.from('11970'),
+          expectedBalance: 11970n,
+          minBalance: 11970n,
           tokenAddress: sellTokenAddress,
           isBaseToken: false,
-          decimals: 18,
+          decimals: 18n,
         },
       ],
       outputNFTs: [],
-      populatedTransactions: [
+      crossContractCalls: [
         {
           data: '0x095ea7b3000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-          to: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+          to: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
         },
       ],
-      spentERC20Amounts: [],
-      spentNFTs: [],
     });
 
     expect(output.stepOutputs[2]).to.deep.equal({
       name: '0x Exchange Swap',
       description: 'Swaps two ERC20 tokens using 0x Exchange DEX Aggregator.',
-      feeERC20AmountRecipients: [],
       outputERC20Amounts: [
         {
           approvedSpender: undefined,
-          expectedBalance: BigNumber.from('500'),
-          minBalance: BigNumber.from('495'),
+          expectedBalance: 500n,
+          minBalance: 495n,
           tokenAddress: buyTokenAddress,
           isBaseToken: undefined,
-          decimals: 18,
+          decimals: 18n,
         },
         {
           approvedSpender: spender,
-          expectedBalance: BigNumber.from('1970'),
-          minBalance: BigNumber.from('1970'),
+          expectedBalance: 1970n,
+          minBalance: 1970n,
           tokenAddress: sellTokenAddress,
           isBaseToken: false,
-          decimals: 18,
+          decimals: 18n,
         },
       ],
       outputNFTs: [],
-      populatedTransactions: [
+      crossContractCalls: [
         {
           data: '0x5678',
           to: '0x1234',
-          value: BigNumber.from(0),
+          value: 0n,
         },
       ],
       spentERC20Amounts: [
         {
-          amount: BigNumber.from('10000'),
+          amount: 10000n,
           isBaseToken: false,
           tokenAddress: sellTokenAddress,
           recipient: '0x Exchange',
-          decimals: 18,
+          decimals: 18n,
         },
       ],
-      spentNFTs: [],
     });
 
     expect(output.stepOutputs[3]).to.deep.equal({
-      name: 'Shield',
+      name: 'Shield (Default)',
       description: 'Shield ERC20s and NFTs into private RAILGUN balance.',
       feeERC20AmountRecipients: [
         {
-          amount: BigNumber.from('1'),
+          amount: 1n,
           recipient: 'RAILGUN Shield Fee',
           tokenAddress: buyTokenAddress,
-          decimals: 18,
+          decimals: 18n,
         },
         {
-          amount: BigNumber.from('4'),
+          amount: 4n,
           recipient: 'RAILGUN Shield Fee',
           tokenAddress: sellTokenAddress,
-          decimals: 18,
+          decimals: 18n,
         },
       ],
       outputERC20Amounts: [
         {
           approvedSpender: undefined,
-          expectedBalance: BigNumber.from('499'),
-          minBalance: BigNumber.from('494'),
+          expectedBalance: 499n,
+          minBalance: 494n,
           tokenAddress: buyTokenAddress,
           isBaseToken: undefined,
-          decimals: 18,
+          decimals: 18n,
+          recipient: undefined,
         },
         {
           approvedSpender: spender,
-          expectedBalance: BigNumber.from('1966'),
-          minBalance: BigNumber.from('1966'),
+          expectedBalance: 1966n,
+          minBalance: 1966n,
           tokenAddress: sellTokenAddress,
           isBaseToken: false,
-          decimals: 18,
+          decimals: 18n,
+          recipient: undefined,
         },
       ],
       outputNFTs: [],
-      populatedTransactions: [],
-      spentERC20Amounts: [],
-      spentNFTs: [],
+      crossContractCalls: [],
     });
 
     expect(
-      output.erc20Amounts.map(({ tokenAddress }) => tokenAddress),
+      output.erc20AmountRecipients.map(({ tokenAddress }) => tokenAddress),
     ).to.deep.equal(
       [sellTokenAddress, buyTokenAddress].map(tokenAddress =>
         tokenAddress.toLowerCase(),
       ),
     );
 
-    expect(output.nfts).to.deep.equal([]);
+    expect(output.nftRecipients).to.deep.equal([]);
 
-    const populatedTransactionsFlattened = output.stepOutputs.flatMap(
-      stepOutput => stepOutput.populatedTransactions,
+    const crossContractCallsFlattened = output.stepOutputs.flatMap(
+      stepOutput => stepOutput.crossContractCalls,
     );
-    expect(output.populatedTransactions).to.deep.equal(
-      populatedTransactionsFlattened,
+    expect(output.crossContractCalls).to.deep.equal(
+      crossContractCallsFlattened,
     );
 
     expect(output.feeERC20AmountRecipients).to.deep.equal([
       {
-        amount: BigNumber.from('30'),
+        amount: 30n,
         recipient: 'RAILGUN Unshield Fee',
         tokenAddress: sellTokenAddress,
-        decimals: 18,
+        decimals: 18n,
       },
       {
-        amount: BigNumber.from('1'),
+        amount: 1n,
         recipient: 'RAILGUN Shield Fee',
         tokenAddress: buyTokenAddress,
-        decimals: 18,
+        decimals: 18n,
       },
       {
-        amount: BigNumber.from('4'),
+        amount: 4n,
         recipient: 'RAILGUN Shield Fee',
         tokenAddress: sellTokenAddress,
-        decimals: 18,
+        decimals: 18n,
       },
     ]);
   });
 
   it('Should test zero-x-swap-recipe error cases', async () => {
-    const recipe = new ZeroXSwapRecipe(sellToken, buyToken, slippagePercentage);
+    const recipe = new ZeroXSwapRecipe(
+      sellToken,
+      buyToken,
+      slippageBasisPoints,
+    );
 
     // No matching erc20 inputs
     const recipeInputNoMatch: RecipeInput = {
+      railgunAddress: MOCK_RAILGUN_WALLET_ADDRESS,
       networkName: networkName,
       erc20Amounts: [
         {
           tokenAddress: '0x1234',
-          decimals: 18,
-          amount: BigNumber.from('12000'),
+          decimals: 18n,
+          amount: 12000n,
         },
       ],
       nfts: [],
@@ -302,13 +305,14 @@ describe('zero-x-swap-recipe', () => {
 
     // Too low balance for erc20 input
     const recipeInputTooLow: RecipeInput = {
+      railgunAddress: MOCK_RAILGUN_WALLET_ADDRESS,
       networkName: networkName,
       erc20Amounts: [
         {
           tokenAddress: sellTokenAddress,
-          decimals: 18,
+          decimals: 18n,
           isBaseToken: false,
-          amount: BigNumber.from('2000'),
+          amount: 2000n,
         },
       ],
       nfts: [],

@@ -1,6 +1,7 @@
 import {
   RecipeAddLiquidityData,
   RecipeERC20AmountRecipient,
+  StepConfig,
   StepInput,
   StepOutputERC20Amount,
   UniswapV2Fork,
@@ -8,13 +9,13 @@ import {
 } from '../../../models/export-models';
 import { compareERC20Info, isApprovedForSpender } from '../../../utils';
 import { Step } from '../../step';
-import { UniV2LikeSDK } from '../../../api/uniswap/uni-v2-like-sdk';
+import { UniV2LikeSDK } from '../../../api/uni-v2-like/uni-v2-like-sdk';
 import { minBalanceAfterSlippage } from '../../../utils/number';
 import { UniV2LikeRouterContract } from '../../../contract/liquidity/uni-v2-like-router-contract';
 import { NETWORK_CONFIG } from '@railgun-community/shared-models';
 
 export class UniV2LikeAddLiquidityStep extends Step {
-  readonly config = {
+  readonly config: StepConfig = {
     name: '[Name] Add Liquidity',
     description: 'Adds liquidity to a [NAME] Pool.',
     hasNonDeterministicOutput: true,
@@ -45,7 +46,7 @@ export class UniV2LikeAddLiquidityStep extends Step {
       erc20AmountA,
       erc20AmountB,
       expectedLPAmount,
-      slippagePercentage,
+      slippageBasisPoints,
       deadlineTimestamp,
     } = this.addLiquidityData;
 
@@ -71,17 +72,17 @@ export class UniV2LikeAddLiquidityStep extends Step {
 
     const minAmountA = minBalanceAfterSlippage(
       validatedERC20AmountA.expectedBalance,
-      slippagePercentage,
+      slippageBasisPoints,
     );
     const minAmountB = minBalanceAfterSlippage(
       validatedERC20AmountB.expectedBalance,
-      slippagePercentage,
+      slippageBasisPoints,
     );
 
     const { relayAdaptContract } = NETWORK_CONFIG[input.networkName];
 
     const contract = new UniV2LikeRouterContract(routerContractAddress);
-    const populatedTransaction = await contract.createAddLiquidity(
+    const crossContractCall = await contract.createAddLiquidity(
       validatedERC20AmountA.tokenAddress,
       validatedERC20AmountB.tokenAddress,
       validatedERC20AmountA.expectedBalance,
@@ -108,7 +109,7 @@ export class UniV2LikeAddLiquidityStep extends Step {
 
     const minLPBalance = minBalanceAfterSlippage(
       expectedLPAmount.amount,
-      slippagePercentage,
+      slippageBasisPoints,
     );
     const outputLPERC20Amount: StepOutputERC20Amount = {
       tokenAddress: expectedLPAmount.tokenAddress,
@@ -120,15 +121,13 @@ export class UniV2LikeAddLiquidityStep extends Step {
     };
 
     return {
-      populatedTransactions: [populatedTransaction],
+      crossContractCalls: [crossContractCall],
       spentERC20Amounts: [
         spendERC20AmountRecipientA,
         spendERC20AmountRecipientB,
       ],
       outputERC20Amounts: [outputLPERC20Amount, ...unusedERC20Amounts],
-      spentNFTs: [],
       outputNFTs: input.nfts,
-      feeERC20AmountRecipients: [],
     };
   }
 }

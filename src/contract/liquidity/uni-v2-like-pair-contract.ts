@@ -1,25 +1,20 @@
-import { Contract } from '@ethersproject/contracts';
-import { abi } from '../../abi-typechain/abi';
-import { UniV2LikePair } from '../../abi-typechain/liquidity/UniV2LikePair';
-import { validateAddress } from '../../utils/address';
-import { BaseProvider } from '@ethersproject/providers';
-import { BigNumber } from 'ethers';
+import { Contract, Provider } from 'ethers';
+import { abi } from '../../abi/abi';
+import { UniV2LikePair } from '../../typechain';
+import { validateContractAddress } from '../../utils/address';
 
 export class UniV2LikePairContract {
   private readonly contract: UniV2LikePair;
 
-  constructor(pairAddress: string, provider: BaseProvider) {
-    if (!pairAddress) {
-      throw new Error('Pair address is required for LP router');
-    }
-    if (!validateAddress(pairAddress)) {
+  constructor(address: string, provider: Provider) {
+    if (!validateContractAddress(address)) {
       throw new Error('Invalid pair address for LP router contract');
     }
     this.contract = new Contract(
-      pairAddress,
+      address,
       abi.liquidity.uniV2LikePair,
       provider,
-    ) as UniV2LikePair;
+    ) as unknown as UniV2LikePair;
   }
 
   async getReserves() {
@@ -30,12 +25,12 @@ export class UniV2LikePairContract {
     };
   }
 
-  async totalSupply(): Promise<BigNumber> {
+  async totalSupply(): Promise<bigint> {
     const totalSupply = await this.contract.totalSupply();
     return totalSupply;
   }
 
-  async kLast(): Promise<BigNumber> {
+  async kLast(): Promise<bigint> {
     return this.contract.kLast();
   }
 }

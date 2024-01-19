@@ -1,53 +1,104 @@
 import {
+  NetworkName,
+  TXIDVersion,
+  isDefined,
+} from '@railgun-community/shared-models';
+import {
+  createRailgunWallet2ForTests,
   createRailgunWalletForTests,
   loadLocalhostFallbackProviderForTests,
+  pollUntilUTXOMerkletreeScanned,
   removeTestDB,
   shieldAllTokensForTests,
   startRailgunForTests,
   waitForShieldedTokenBalances,
 } from './railgun-setup.test';
-import { ForkRPCType, setupTestEthereumRPCAndWallets } from './rpc-setup.test';
+import { ForkRPCType, setupTestRPCAndWallets } from './rpc-setup.test';
 import { testConfig } from './test-config.test';
+import { getForkTestNetworkName } from './common.test';
 
 before(async function run() {
-  if (process.env.RUN_FORK_TESTS) {
-    this.timeout(2 * 60 * 1000); // 2 min timeout for setup.
+  if (isDefined(process.env.RUN_FORK_TESTS)) {
+    this.timeout(3 * 60 * 1000); // 3 min timeout for setup.
     removeTestDB();
-    await setupGanacheQuickstartTests();
+    await setupForkTests();
   }
 });
 
 after(() => {
-  if (process.env.RUN_FORK_TESTS) {
+  if (isDefined(process.env.RUN_FORK_TESTS)) {
     removeTestDB();
   }
 });
 
-export const setupGanacheQuickstartTests = async () => {
-  const tokenAddresses: string[] = [
-    testConfig.contractsEthereum.weth9,
-    testConfig.contractsEthereum.rail,
-    testConfig.contractsEthereum.usdc,
-    testConfig.contractsEthereum.usdcWethSushiswapV2LPToken,
-    testConfig.contractsEthereum.crvCRVETH,
-    testConfig.contractsEthereum.crvCRVETHVaultToken,
-  ];
+const getTestERC20Addresses = (networkName: NetworkName): string[] => {
+  switch (networkName) {
+    case NetworkName.Ethereum:
+      return [
+        testConfig.contractsEthereum.weth9,
+        testConfig.contractsEthereum.rail,
+        testConfig.contractsEthereum.usdc,
+        testConfig.contractsEthereum.usdcWethSushiSwapV2LPToken,
+        testConfig.contractsEthereum.crvUSDCWBTCWETH,
+        testConfig.contractsEthereum.mooConvexTriCryptoUSDC,
+      ];
+    case NetworkName.Arbitrum:
+      return [testConfig.contractsArbitrum.dai];
+    case NetworkName.BNBChain:
+    case NetworkName.Polygon:
+    case NetworkName.EthereumRopsten_DEPRECATED:
+    case NetworkName.EthereumGoerli:
+    case NetworkName.PolygonMumbai:
+    case NetworkName.ArbitrumGoerli:
+    case NetworkName.Hardhat:
+    case NetworkName.Railgun:
+      return [];
+  }
+};
 
-  const forkRPCType = process.env.USE_GANACHE
+const getSupportedNetworkNamesForTest = (): NetworkName[] => {
+  return [NetworkName.Ethereum, NetworkName.Arbitrum];
+};
+
+export const setupForkTests = async () => {
+  const networkName = getForkTestNetworkName();
+  const txidVersion = TXIDVersion.V2_PoseidonMerkle;
+
+  if (!Object.values(NetworkName).includes(networkName)) {
+    throw new Error(
+      `Unrecognized network name, expected one of list: ${getSupportedNetworkNamesForTest().join(
+        ', ',
+      )}`,
+    );
+  }
+
+  const tokenAddresses: string[] = getTestERC20Addresses(networkName);
+
+  const forkRPCType = isDefined(process.env.USE_GANACHE)
     ? ForkRPCType.Ganache
+    : isDefined(process.env.USE_HARDHAT)
+    ? ForkRPCType.Hardhat
     : ForkRPCType.Anvil;
 
   // Ganache forked Ethereum RPC setup
-  await setupTestEthereumRPCAndWallets(forkRPCType, tokenAddresses);
+  await setupTestRPCAndWallets(forkRPCType, networkName, tokenAddresses);
 
   // Quickstart setup
   startRailgunForTests();
-  await loadLocalhostFallbackProviderForTests();
 
-  // Wallet setup and initial shield
+  await loadLocalhostFallbackProviderForTests(networkName);
+
+  await pollUntilUTXOMerkletreeScanned();
+
+  // Set up primary wallet
   await createRailgunWalletForTests();
-  await shieldAllTokensForTests(tokenAddresses);
+
+  // Set up secondary wallets
+  await createRailgunWallet2ForTests();
+
+  // Shield tokens for tests
+  await shieldAllTokensForTests(networkName, tokenAddresses);
 
   // Make sure shielded balances are updated
-  await waitForShieldedTokenBalances(tokenAddresses);
+  await waitForShieldedTokenBalances(txidVersion, networkName, tokenAddresses);
 };

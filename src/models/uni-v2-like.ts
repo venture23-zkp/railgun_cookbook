@@ -1,12 +1,17 @@
-import { BigNumber } from '@ethersproject/bignumber';
+import { UniswapV2Fork } from './export-models';
 
-export type PairDataWithRate = {
+export type LiquidityV2Pool = {
+  name: string;
+  uniswapV2Fork: UniswapV2Fork;
   tokenAddressA: string;
   tokenSymbolA: string;
-  tokenDecimalsA: number;
+  tokenDecimalsA: bigint;
   tokenAddressB: string;
   tokenSymbolB: string;
-  tokenDecimalsB: number;
+  tokenDecimalsB: bigint;
   pairAddress: string;
-  rateWith18Decimals: BigNumber;
+  pairTokenName: string;
+  pairTokenSymbol: string;
+  pairTokenDecimals: bigint;
+  rateWith18Decimals: bigint;
 };

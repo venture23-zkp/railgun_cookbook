@@ -1,6 +1,5 @@
-[![Unit Tests Actions Status](https://github.com/Railgun-Community/cookbook/actions/workflows/unit-tests.yml/badge.svg?branch=main)](https://github.com/Railgun-Community/cookbook/actions)
-
-<!-- [![Integration Tests Actions Status](https://github.com/Railgun-Community/cookbook/actions/workflows/integration-tests.yml/badge.svg?branch=main)](https://github.com/Railgun-Community/cookbook/actions) -->
+[![Unit Tests](https://github.com/Railgun-Community/cookbook/actions/workflows/unit-tests.yml/badge.svg?branch=main)](https://github.com/Railgun-Community/cookbook/actions)
+[![Integration Tests](https://github.com/Railgun-Community/cookbook/actions/workflows/integration-tests.yml/badge.svg?branch=main)](https://github.com/Railgun-Community/cookbook/actions)
 
 # RAILGUN Cookbook
 
@@ -40,13 +39,13 @@ As an example, a simple 0x Exchange Swap call has a pre-requisite: the Sell Toke
 
 Combo Meals are the final frontier – every zkApp Chef's dream. They combine Recipes into very complex interactions, made 100% safe for execution against a private balance using the Cookbook.
 
-For example, there is a [Combo Meal](https://github.com/Railgun-Community/cookbook/blob/main/src/combo-meals/liquidity-vault/uni-v2-like-add-liquidity-beefy-deposit-combo-meal.ts)) that combines an "Add Liquidity" Recipe for Uniswap, with a "Deposit Vault" Recipe for Beefy. This gives a user the ability to add liquidity for a token pair on Uniswap, gain the LP token for that pair, and then deposit the LP token into a Beefy Vault to earn yield.
+For example, there is a [Combo Meal](https://github.com/Railgun-Community/cookbook/blob/main/src/combo-meals/liquidity-vault/uni-v2-like-add-liquidity-beefy-deposit-combo-meal.ts) that combines an "Add Liquidity" Recipe for Uniswap, with a "Deposit Vault" Recipe for Beefy. This gives a user the ability to add liquidity for a token pair on Uniswap, gain the LP token for that pair, and then deposit the LP token into a Beefy Vault to earn yield.
 
 This all occurs in a single validated transaction call, saving network fees and making the user experience simple and delightful.
 
 ## Cook up a Recipe for the RAILGUN Quickstart SDK
 
-Given a full Recipe and its inputs, [RAILGUN Quickstart](https://docs.railgun.org/developer-guide/quickstart/overview) will generate a [zero-knowledge proof](https://docs.railgun.org/wiki/learn/privacy-system/zero-knowledge-cryptography) and a final serialized transaction for the RAILGUN Relay Adapt contract.
+Given a full Recipe and its inputs, [RAILGUN Quickstart](https://docs.railgun.org/developer-guide/wallet/overview) will generate a [zero-knowledge proof](https://docs.railgun.org/wiki/learn/privacy-system/zero-knowledge-cryptography) and a final serialized transaction for the RAILGUN Relay Adapt contract.
 
 This final transaction can be submitted to the blockchain by any wallet, including a [Relayer](https://docs.railgun.org/wiki/learn/privacy-system/community-relayers).
 
@@ -57,23 +56,20 @@ const swap = new ZeroXSwapRecipe(sellERC20Info, buyERC20Info, slippagePercentage
 const unshieldERC20Amounts = [{ ...sellERC20Info, amount }];
 
 const recipeInput = { networkName, unshieldERC20Amounts };
-const { populatedTransactions, erc20Amounts } = await swap.getRecipeOutput(recipeInput);
+const { crossContractCalls, erc20Amounts } = await swap.getRecipeOutput(recipeInput);
 
 // Outputs to re-shield after the Recipe multicall.
 const shieldERC20Addresses = erc20Amounts.map(({tokenAddress}) => tokenAddress);
 
 // RAILGUN Quickstart will generate a [unshield -> call -> re-shield] transaction enclosing the Recipe multicall.
-const crossContractCallsSerialized = populatedTransactions.map(
-    serializeUnsignedTransaction,
-)
 
-const {gasEstimateString} = await gasEstimateForUnprovenCrossContractCalls(
+const {gasEstimate} = await gasEstimateForUnprovenCrossContractCalls(
     ...
     unshieldERC20Amounts,
     ...
     shieldERC20Addresses,
     ...
-    crossContractCallsSerialized,
+    crossContractCalls,
     ...
 )
 await generateCrossContractCallsProof(
@@ -82,21 +78,20 @@ await generateCrossContractCallsProof(
     ...
     shieldERC20Addresses,
     ...
-    crossContractCallsSerialized,
+    crossContractCalls,
     ...
 )
-const {serializedTransaction} = await populateProvedCrossContractCalls(
+const {transaction} = await populateProvedCrossContractCalls(
     ...
     unshieldERC20Amounts,
     ...
     shieldERC20Addresses,
     ...
-    crossContractCallsSerialized,
+    crossContractCalls,
     ...
 );
 
 // Submit transaction to RPC.
-const transaction = deserializeTransaction(serializedTransaction);
 await wallet.sendTransaction(transaction);
 
 // Note: use @railgun-community/waku-relayer-client to submit through a Relayer instead of signing with your own wallet.
@@ -112,12 +107,16 @@ await wallet.sendTransaction(transaction);
 
 ### Setup:
 
-1. Set up anvil (install foundryup): `curl -L https://foundry.paradigm.xyz | bash`
+1. Set up anvil (install [foundryup](https://book.getfoundry.sh/getting-started/installation)): `curl -L https://foundry.paradigm.xyz | bash`
 
-2. Add an Ethereum RPC for fork (Alchemy recommended for best stability): `export ETHEREUM_RPC_URL='your/rpc/url'`
+2. Add an Ethereum RPC for fork: `export ETHEREUM_RPC_URL='your/rpc/url'`
 
-### Run all tests:
+### Run fork tests:
 
-1. Run anvil fork and load test account with 1000 ETH: `./run-anvil your/ethereum/rpc/url`
+1. Fork tests currently support networks: Ethereum, Arbitrum
 
-2. Run tests (in another terminal): `yarn test-fork`.
+2. Run anvil fork with an RPC URL and load test account with 1000 ETH: `./run-anvil Ethereum https://your/ethereum/rpc/url`
+
+- See [Chainlist](https://chainlist.org/) or [Pokt](https://docs.pokt.network/use/public-rpc/) for public RPC endpoints (however paid RPCs are recommended for stability).
+
+3. Run tests (in another terminal): `env NETWORK_NAME=Ethereum yarn test-fork`.

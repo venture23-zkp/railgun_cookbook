@@ -1,25 +1,25 @@
-import { BigNumber } from '@ethersproject/bignumber';
 import {
   RecipeERC20AmountRecipient,
+  StepConfig,
   StepInput,
   StepOutputERC20Amount,
   UnvalidatedStepOutput,
 } from '../../models/export-models';
 import { Step } from '../step';
 import { getWrappedBaseToken } from '../../utils/wrap-util';
-import { PopulatedTransaction } from '@ethersproject/contracts';
 import { RelayAdaptContract } from '../../contract/adapt/relay-adapt-contract';
 import { compareERC20Info } from '../../utils/token';
+import { ContractTransaction } from 'ethers';
 
 export class UnwrapBaseTokenStep extends Step {
-  readonly config = {
+  readonly config: StepConfig = {
     name: 'Unwrap Base Token',
     description: 'Unwraps wrapped token into base token, ie WETH to ETH.',
   };
 
-  private readonly amount: Optional<BigNumber>;
+  private readonly amount: Optional<bigint>;
 
-  constructor(amount?: BigNumber) {
+  constructor(amount?: bigint) {
     super();
     this.amount = amount;
   }
@@ -38,7 +38,7 @@ export class UnwrapBaseTokenStep extends Step {
       );
 
     const contract = new RelayAdaptContract(input.networkName);
-    const populatedTransactions: PopulatedTransaction[] = [
+    const crossContractCalls: ContractTransaction[] = [
       await contract.createBaseTokenUnwrap(this.amount),
     ];
 
@@ -55,12 +55,10 @@ export class UnwrapBaseTokenStep extends Step {
     };
 
     return {
-      populatedTransactions,
+      crossContractCalls,
       spentERC20Amounts: [spentWrappedERC20Amount],
       outputERC20Amounts: [unwrappedBaseERC20Amount, ...unusedERC20Amounts],
-      spentNFTs: [],
       outputNFTs: input.nfts,
-      feeERC20AmountRecipients: [],
     };
   }
 }

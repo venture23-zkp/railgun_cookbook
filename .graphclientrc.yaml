@@ -2,7 +2,9 @@ sources:
   - name: uniswap-v2-ethereum
     handler:
       graphql:
-        endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
+        # The core Uniswap V2 subgraph is experiencing problems with indexing.
+        # endpoint: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2
+        endpoint: https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v2-dev
   - name: sushiswap-v2-ethereum
     handler:
       graphql:
@@ -10,15 +12,23 @@ sources:
   - name: sushiswap-v2-polygon
     handler:
       graphql:
-        endpoint: https://api.thegraph.com/subgraphs/name/sushiswap/bsc-exchange
+        endpoint: https://api.thegraph.com/subgraphs/name/sushiswap/matic-exchange
   - name: sushiswap-v2-bsc
     handler:
       graphql:
-        endpoint: https://api.thegraph.com/subgraphs/name/sushiswap/matic-exchange
+        endpoint: https://api.thegraph.com/subgraphs/name/sushiswap/bsc-exchange
   - name: sushiswap-v2-arbitrum
     handler:
       graphql:
         endpoint: https://api.thegraph.com/subgraphs/name/sushiswap/arbitrum-exchange
+  - name: pancakeswap-v2-bsc
+    handler:
+      graphql:
+        endpoint: https://api.thegraph.com/subgraphs/name/ord786/pancakeswap
+  - name: quickswap-v2-polygon
+    handler:
+      graphql:
+        endpoint: https://api.thegraph.com/subgraphs/name/shivannguyen/quickswap-matic2
 
 documents:
   - ./src/graph/graphql/uni-v2-like-query.graphql

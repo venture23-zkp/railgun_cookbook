@@ -1,4 +1,3 @@
-import { BigNumber } from '@ethersproject/bignumber';
 import {
   ComboMealConfig,
   RecipeInput,
@@ -17,10 +16,13 @@ export abstract class ComboMeal {
     output: RecipeOutput,
   ): RecipeInput {
     return {
+      railgunAddress: input.railgunAddress,
       networkName: input.networkName,
       // TODO: Minimum balance is lost for combos. (amount is expectedBalance).
-      erc20Amounts: output.erc20Amounts.filter(({ amount }) => amount.gt(0)),
-      nfts: output.nfts,
+      erc20Amounts: output.erc20AmountRecipients.filter(
+        ({ amount }) => amount > 0n,
+      ),
+      nfts: output.nftRecipients,
     };
   }
 
@@ -30,11 +32,13 @@ export abstract class ComboMeal {
     let nextInput = input;
 
     const aggregatedRecipeOutput: RecipeOutput = {
+      name: this.config.name,
       stepOutputs: [],
-      populatedTransactions: [],
-      erc20Amounts: [],
-      nfts: [],
+      crossContractCalls: [],
+      erc20AmountRecipients: [],
+      nftRecipients: [],
       feeERC20AmountRecipients: [],
+      minGasLimit: this.config.minGasLimit,
     };
 
     for (let i = 0; i < recipes.length; i++) {
@@ -50,52 +54,54 @@ export abstract class ComboMeal {
       nextInput = this.createNextRecipeInput(nextInput, recipeOutput);
 
       aggregatedRecipeOutput.stepOutputs.push(...recipeOutput.stepOutputs);
-      aggregatedRecipeOutput.populatedTransactions.push(
-        ...recipeOutput.populatedTransactions,
+      aggregatedRecipeOutput.crossContractCalls.push(
+        ...recipeOutput.crossContractCalls,
       );
       aggregatedRecipeOutput.feeERC20AmountRecipients.push(
         ...recipeOutput.feeERC20AmountRecipients,
       );
 
       // Add amounts to remove any duplicates.
-      recipeOutput.erc20Amounts.forEach(erc20Amount => {
-        const found = aggregatedRecipeOutput.erc20Amounts.find(
+      recipeOutput.erc20AmountRecipients.forEach(erc20AmountRecipient => {
+        const found = aggregatedRecipeOutput.erc20AmountRecipients.find(
           existingERC20Amount => {
-            return compareTokenAddress(
-              existingERC20Amount.tokenAddress,
-              erc20Amount.tokenAddress,
+            return (
+              compareTokenAddress(
+                existingERC20Amount.tokenAddress,
+                erc20AmountRecipient.tokenAddress,
+              ) &&
+              existingERC20Amount.recipient === erc20AmountRecipient.recipient
             );
           },
         );
         if (found) {
-          found.amount = found.amount.add(erc20Amount.amount);
+          found.amount = found.amount + erc20AmountRecipient.amount;
           return;
         }
-        aggregatedRecipeOutput.erc20Amounts.push(erc20Amount);
+        aggregatedRecipeOutput.erc20AmountRecipients.push(erc20AmountRecipient);
       });
 
       // Add amounts to remove any duplicates.
-      recipeOutput.nfts.forEach(nft => {
-        const found = aggregatedRecipeOutput.nfts.find(existingERC20Amount => {
-          return (
-            compareTokenAddress(
-              existingERC20Amount.nftAddress,
-              nft.nftAddress,
-            ) &&
-            nft.tokenSubID === existingERC20Amount.tokenSubID &&
-            nft.nftTokenType === existingERC20Amount.nftTokenType
-          );
-        });
+      recipeOutput.nftRecipients.forEach(nftRecipient => {
+        const found = aggregatedRecipeOutput.nftRecipients.find(
+          existingNFTRecipient => {
+            return (
+              compareTokenAddress(
+                existingNFTRecipient.nftAddress,
+                nftRecipient.nftAddress,
+              ) &&
+              nftRecipient.tokenSubID === existingNFTRecipient.tokenSubID &&
+              nftRecipient.nftTokenType === existingNFTRecipient.nftTokenType &&
+              existingNFTRecipient.recipient === nftRecipient.recipient
+            );
+          },
+        );
         if (found) {
-          found.amountString = BigNumber.from(found.amountString)
-            .add(nft.amountString)
-            .toHexString();
+          found.amount = found.amount + nftRecipient.amount;
           return;
         }
-        aggregatedRecipeOutput.nfts.push(nft);
+        aggregatedRecipeOutput.nftRecipients.push(nftRecipient);
       });
-
-      aggregatedRecipeOutput.nfts.push(...recipeOutput.nfts);
     }
 
     return aggregatedRecipeOutput;

@@ -1,28 +1,30 @@
-import { Contract, PopulatedTransaction } from '@ethersproject/contracts';
-import { abi } from '../../abi-typechain/abi';
+import { abi } from '../../abi/abi';
 import {
-  RelayAdapt,
-  TokenDataStruct,
-} from '../../abi-typechain/adapt/RelayAdapt';
-import { NETWORK_CONFIG, NetworkName } from '@railgun-community/shared-models';
-import { BigNumber } from '@ethersproject/bignumber';
+  NETWORK_CONFIG,
+  NetworkName,
+  isDefined,
+} from '@railgun-community/shared-models';
 import { ZERO_ADDRESS } from '../../models/constants';
+import { validateContractAddress } from '../../utils/address';
+import { RelayAdapt } from '../../typechain';
+import { TokenDataStruct } from '../../typechain/adapt/RelayAdapt';
+import { Contract, ContractTransaction } from 'ethers';
 
 export class RelayAdaptContract {
   private readonly contract: RelayAdapt;
 
   constructor(networkName: NetworkName) {
     const network = NETWORK_CONFIG[networkName];
-    if (!network) {
+    if (!isDefined(network)) {
       throw new Error(`Network not found: ${networkName}`);
     }
-    if (!network.relayAdaptContract) {
-      throw new Error('Address is required for Relay Adapt contract.');
+    if (!validateContractAddress(network.relayAdaptContract)) {
+      throw new Error('Invalid address for Relay Adapt contract.');
     }
     this.contract = new Contract(
       network.relayAdaptContract,
       abi.adapt.relay,
-    ) as RelayAdapt;
+    ) as unknown as RelayAdapt;
   }
 
   private createERC20TokenData(tokenAddress: string): TokenDataStruct {
@@ -33,32 +35,48 @@ export class RelayAdaptContract {
     };
   }
 
-  createBaseTokenWrap(amount?: BigNumber): Promise<PopulatedTransaction> {
-    return this.contract.populateTransaction.wrapBase(
+  createBaseTokenWrap(amount?: bigint): Promise<ContractTransaction> {
+    return this.contract.wrapBase.populateTransaction(
       // 0 will automatically wrap full balance.
-      amount ?? BigNumber.from(0),
+      amount ?? 0n,
     );
   }
 
-  createBaseTokenUnwrap(amount?: BigNumber): Promise<PopulatedTransaction> {
-    return this.contract.populateTransaction.unwrapBase(
+  createBaseTokenUnwrap(amount?: bigint): Promise<ContractTransaction> {
+    return this.contract.unwrapBase.populateTransaction(
       // 0 will automatically unwrap full balance.
-      amount ?? BigNumber.from(0),
+      amount ?? 0n,
     );
   }
 
   createBaseTokenTransfer(
     toAddress: string,
-    amount?: BigNumber,
-  ): Promise<PopulatedTransaction> {
-    const baseTokenData = this.createERC20TokenData(ZERO_ADDRESS);
-
+    amount?: bigint,
+  ): Promise<ContractTransaction> {
     const baseTokenTransfer: RelayAdapt.TokenTransferStruct = {
-      token: baseTokenData,
+      token: this.createERC20TokenData(ZERO_ADDRESS),
       to: toAddress,
       // 0 will automatically transfer full balance.
-      value: amount ?? BigNumber.from(0),
+      value: amount ?? 0n,
     };
-    return this.contract.populateTransaction.transfer([baseTokenTransfer]);
+    return this.contract.transfer.populateTransaction([baseTokenTransfer]);
+  }
+
+  createERC20Transfer(
+    toAddress: string,
+    tokenAddress: string,
+    amount?: bigint,
+  ) {
+    const erc20Transfer: RelayAdapt.TokenTransferStruct = {
+      token: this.createERC20TokenData(tokenAddress),
+      to: toAddress,
+      // 0 will automatically transfer full balance.
+      value: amount ?? 0n,
+    };
+    return this.contract.transfer.populateTransaction([erc20Transfer]);
+  }
+
+  createNFTAccount() {
+    return this.contract.createNftAccounts.populateTransaction();
   }
 }

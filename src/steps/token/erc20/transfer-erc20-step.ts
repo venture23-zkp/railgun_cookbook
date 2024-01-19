@@ -1,17 +1,17 @@
-import { BigNumber } from 'ethers';
 import {
   RecipeERC20AmountRecipient,
   RecipeERC20Info,
+  StepConfig,
   StepInput,
   UnvalidatedStepOutput,
 } from '../../../models/export-models';
 import { compareERC20Info } from '../../../utils/token';
 import { Step } from '../../step';
-import { PopulatedTransaction } from '@ethersproject/contracts';
-import { ERC20Contract } from '../../../contract/token/erc20-contract';
+import { ContractTransaction } from 'ethers';
+import { RelayAdaptContract } from '../../../contract';
 
 export class TransferERC20Step extends Step {
-  readonly config = {
+  readonly config: StepConfig = {
     name: 'Transfer ERC20',
     description: 'Transfers ERC20 token to an external public address.',
   };
@@ -20,13 +20,9 @@ export class TransferERC20Step extends Step {
 
   private readonly erc20Info: RecipeERC20Info;
 
-  private readonly amount: Optional<BigNumber>;
+  private readonly amount: Optional<bigint>;
 
-  constructor(
-    toAddress: string,
-    erc20Info: RecipeERC20Info,
-    amount?: BigNumber,
-  ) {
+  constructor(toAddress: string, erc20Info: RecipeERC20Info, amount?: bigint) {
     super();
     this.toAddress = toAddress;
     this.erc20Info = erc20Info;
@@ -45,11 +41,12 @@ export class TransferERC20Step extends Step {
         this.amount,
       );
 
-    const contract = new ERC20Contract(this.erc20Info.tokenAddress);
-    const populatedTransactions: PopulatedTransaction[] = [
-      await contract.createTransfer(
+    const contract = new RelayAdaptContract(input.networkName);
+    const crossContractCalls: ContractTransaction[] = [
+      await contract.createERC20Transfer(
         this.toAddress,
-        this.amount ?? erc20AmountForStep.expectedBalance,
+        this.erc20Info.tokenAddress,
+        this.amount,
       ),
     ];
 
@@ -61,12 +58,10 @@ export class TransferERC20Step extends Step {
     };
 
     return {
-      populatedTransactions,
+      crossContractCalls,
       spentERC20Amounts: [transferredERC20],
       outputERC20Amounts: unusedERC20Amounts,
-      spentNFTs: [],
       outputNFTs: input.nfts,
-      feeERC20AmountRecipients: [],
     };
   }
 }

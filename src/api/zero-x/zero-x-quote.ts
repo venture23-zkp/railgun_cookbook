@@ -1,8 +1,6 @@
 import { NETWORK_CONFIG, NetworkName } from '@railgun-community/shared-models';
 import { AxiosError } from 'axios';
 import { getContractAddressesForChainOrThrow } from '@0x/contract-addresses';
-import { BigNumber } from '@ethersproject/bignumber';
-import { parseUnits } from '@ethersproject/units';
 import {
   getZeroXData,
   ZeroXApiEndpoint,
@@ -14,8 +12,8 @@ import {
   SwapQuoteData,
   SwapQuoteParams,
 } from '../../models/export-models';
-import { PopulatedTransaction } from '@ethersproject/contracts';
 import { minBalanceAfterSlippage } from '../../utils/number';
+import { ContractTransaction, parseUnits } from 'ethers';
 
 export const ZERO_X_PRICE_DECIMALS = 18;
 
@@ -45,7 +43,7 @@ const ZERO_X_PROXY_BASE_TOKEN_ADDRESS =
 
 export class ZeroXQuote {
   private static getZeroXTokenAddress = (erc20: RecipeERC20Info) => {
-    if (erc20.isBaseToken) {
+    if (erc20.isBaseToken ?? false) {
       return ZERO_X_PROXY_BASE_TOKEN_ADDRESS;
     }
     return erc20.tokenAddress;
@@ -98,22 +96,25 @@ export class ZeroXQuote {
     networkName,
     sellERC20Amount,
     buyERC20Info,
-    slippagePercentage,
+    slippageBasisPoints,
     isRailgun,
   }: SwapQuoteParams): Promise<SwapQuoteData> => {
-    const sellAmount = sellERC20Amount.amount.toString();
-    if (sellAmount === '0') {
+    if (sellERC20Amount.amount === 0n) {
       throw new Error('Swap sell amount is 0.');
     }
+
     const sellTokenAddress = this.getZeroXTokenAddress(sellERC20Amount);
     const buyTokenAddress = this.getZeroXTokenAddress(buyERC20Info);
+
     if (sellTokenAddress === buyTokenAddress) {
       throw new Error('Swap sell and buy tokens are the same.');
     }
+
+    const slippagePercentage = Number(slippageBasisPoints) / 10000;
     const params: ZeroXAPIQuoteParams = {
       sellToken: sellTokenAddress,
       buyToken: buyTokenAddress,
-      sellAmount,
+      sellAmount: sellERC20Amount.amount.toString(),
       slippagePercentage: String(slippagePercentage),
     };
 
@@ -141,18 +142,19 @@ export class ZeroXQuote {
         sellTokenAddress,
         buyTokenAddress,
       );
+
       if (invalidError) {
         throw invalidError;
       }
 
       const minimumBuyAmount = minBalanceAfterSlippage(
-        BigNumber.from(buyAmount),
-        slippagePercentage,
+        BigInt(buyAmount),
+        slippageBasisPoints,
       );
-      const populatedTransaction: PopulatedTransaction = {
+      const crossContractCall: ContractTransaction = {
         to: to,
         data: data,
-        value: BigNumber.from(value),
+        value: BigInt(value),
       };
       const spender: Optional<string> =
         allowanceTarget === NULL_SPENDER_ADDRESS ? undefined : allowanceTarget;
@@ -162,16 +164,17 @@ export class ZeroXQuote {
         guaranteedPrice: parseUnits(guaranteedPrice, ZERO_X_PRICE_DECIMALS),
         buyERC20Amount: {
           ...buyERC20Info,
-          amount: BigNumber.from(buyAmount),
+          amount: BigInt(buyAmount),
         },
         minimumBuyAmount,
         spender,
-        populatedTransaction,
-        slippagePercentage,
+        crossContractCall,
+        slippageBasisPoints,
         sellTokenAddress: sellTokenAddressResponse,
         sellTokenValue: sellTokenValueResponse,
       };
     } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const msg = this.formatApiError(err);
       throw new Error(msg);
     }
@@ -187,6 +190,9 @@ export class ZeroXQuote {
       // err.response.data.validationErrors[].reason
 
       const { response } = err as AxiosError<any>;
+      if (!response) {
+        return `0x API request failed: ${err.message}.`;
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const data = response?.data;
@@ -200,7 +206,7 @@ export class ZeroXQuote {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       return `0x Exchange: ${response?.data.reason}. ${firstValidationErrorReason}.`;
     } catch {
-      return '0x API request failed.';
+      return `0x API request failed: ${err.message}.`;
     }
   };
 }

@@ -6,7 +6,7 @@ import {
 import { compareERC20Info } from '../../utils';
 import { Recipe } from '../recipe';
 import { CookbookDebug } from '../../utils/cookbook-debug';
-import { BigNumber } from 'ethers';
+
 import { NetworkName } from '@railgun-community/shared-models';
 
 export abstract class RemoveLiquidityRecipe extends Recipe {
@@ -20,13 +20,13 @@ export abstract class RemoveLiquidityRecipe extends Recipe {
   getExpectedABAmountsFromRecipeOutput(
     recipeOutput: Optional<RecipeOutput>,
   ): Optional<{
-    lpUnshieldFee: BigNumber;
-    aAmount: BigNumber;
-    aMinimum: BigNumber;
-    bAmount: BigNumber;
-    bMinimum: BigNumber;
-    aShieldFee: BigNumber;
-    bShieldFee: BigNumber;
+    lpUnshieldFee: bigint;
+    aAmount: bigint;
+    aMinimum: bigint;
+    bAmount: bigint;
+    bMinimum: bigint;
+    aShieldFee: bigint;
+    bShieldFee: bigint;
   }> {
     try {
       if (!recipeOutput) {
@@ -40,7 +40,7 @@ export abstract class RemoveLiquidityRecipe extends Recipe {
         this.removeLiquidityData;
 
       const unshieldStepOutput = recipeOutput.stepOutputs[0];
-      const unshieldFee = unshieldStepOutput.feeERC20AmountRecipients.find(
+      const unshieldFee = unshieldStepOutput.feeERC20AmountRecipients?.find(
         fee => {
           return compareERC20Info(fee, lpERC20Amount);
         },
@@ -51,15 +51,19 @@ export abstract class RemoveLiquidityRecipe extends Recipe {
 
       const shieldStepOutput =
         recipeOutput.stepOutputs[recipeOutput.stepOutputs.length - 1];
-      const shieldFeeA = shieldStepOutput.feeERC20AmountRecipients.find(fee => {
-        return compareERC20Info(fee, expectedERC20AmountA);
-      });
+      const shieldFeeA = shieldStepOutput.feeERC20AmountRecipients?.find(
+        fee => {
+          return compareERC20Info(fee, expectedERC20AmountA);
+        },
+      );
       if (!shieldFeeA) {
         throw new Error('Expected one shield fee to match token A.');
       }
-      const shieldFeeB = shieldStepOutput.feeERC20AmountRecipients.find(fee => {
-        return compareERC20Info(fee, expectedERC20AmountB);
-      });
+      const shieldFeeB = shieldStepOutput.feeERC20AmountRecipients?.find(
+        fee => {
+          return compareERC20Info(fee, expectedERC20AmountB);
+        },
+      );
       if (!shieldFeeB) {
         throw new Error('Expected one shield fee to match token B.');
       }

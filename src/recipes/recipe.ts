@@ -1,23 +1,31 @@
 import {
   NetworkName,
   RailgunNFTAmount,
+  isDefined,
 } from '@railgun-community/shared-models';
 import {
   RecipeConfig,
-  RecipeERC20Amount,
   RecipeERC20AmountRecipient,
   RecipeInput,
+  RecipeNFTRecipient,
   RecipeOutput,
   StepInput,
   StepOutput,
 } from '../models/export-models';
-import { ShieldStep } from '../steps/railgun/shield-step';
-import { UnshieldStep } from '../steps/railgun/unshield-step';
+import { ShieldDefaultStep } from '../steps/railgun/shield-default-step';
+import { UnshieldDefaultStep } from '../steps/railgun/unshield-default-step';
 import { Step } from '../steps/step';
-import { BigNumber } from 'ethers';
+import { ContractTransaction } from 'ethers';
+import { generateID } from '../utils/id';
 
 export abstract class Recipe {
+  readonly id: string;
+
   abstract readonly config: RecipeConfig;
+
+  constructor() {
+    this.id = generateID();
+  }
 
   protected abstract getInternalSteps(
     firstInternalStepInput: StepInput,
@@ -32,9 +40,11 @@ export abstract class Recipe {
   ): Promise<Step[]> {
     if (skipUnshield) {
       const internalSteps = await this.getInternalSteps(firstStepInput);
-      return skipShield ? internalSteps : [...internalSteps, new ShieldStep()];
+      return skipShield
+        ? internalSteps
+        : [...internalSteps, new ShieldDefaultStep()];
     }
-    const unshieldStep = new UnshieldStep();
+    const unshieldStep = new UnshieldDefaultStep();
     const unshieldOutput = await unshieldStep.getValidStepOutput(
       firstStepInput,
     );
@@ -45,7 +55,7 @@ export abstract class Recipe {
     const internalSteps = await this.getInternalSteps(firstInternalStepInput);
     return skipShield
       ? [unshieldStep, ...internalSteps]
-      : [unshieldStep, ...internalSteps, new ShieldStep()];
+      : [unshieldStep, ...internalSteps, new ShieldDefaultStep()];
   }
 
   private createNextStepInput(
@@ -117,6 +127,8 @@ export abstract class Recipe {
       );
     }
 
+    const { railgunAddress } = input;
+
     const firstStepInput = this.createFirstStepInput(input);
     const steps = await this.getFullSteps(
       firstStepInput,
@@ -129,95 +141,123 @@ export abstract class Recipe {
       throw new Error('No step outputs were generated.');
     }
 
-    const populatedTransactions = stepOutputs
-      .map(output => output.populatedTransactions)
+    const crossContractCalls: ContractTransaction[] = stepOutputs
+      .map(output => output.crossContractCalls)
       .flat();
 
-    // We need to make sure to shield all step outputs, even those in the middle of recipes.
-    const allStepOutputERC20Amounts: Record<string, RecipeERC20Amount> = {};
+    // TODO: Pre callbacks, we need to make sure to shield all step outputs,
+    // even those in the middle of recipes and those with 0n expected amounts.
+    const allStepOutputERC20AmountRecipients: Record<
+      string,
+      RecipeERC20AmountRecipient
+    > = {};
     stepOutputs.forEach((stepOutput, index) => {
       const isFinalStep = index === stepOutputs.length - 1;
       stepOutput.outputERC20Amounts.forEach(outputERC20Amount => {
         const tokenAddress = outputERC20Amount.tokenAddress.toLowerCase();
-        if (allStepOutputERC20Amounts[tokenAddress] && isFinalStep) {
+        if (
+          isDefined(allStepOutputERC20AmountRecipients[tokenAddress]) &&
+          isFinalStep
+        ) {
           // Only set amount for final step outputs.
-          allStepOutputERC20Amounts[tokenAddress].amount =
+          allStepOutputERC20AmountRecipients[tokenAddress].amount =
             outputERC20Amount.expectedBalance; // TODO: Minimum balance is lost for combos.
           return;
         }
-        allStepOutputERC20Amounts[tokenAddress] = {
+        allStepOutputERC20AmountRecipients[tokenAddress] = {
           tokenAddress,
           decimals: outputERC20Amount.decimals,
           isBaseToken: outputERC20Amount.isBaseToken,
           // Expect 0 amount for middle step outputs.
-          amount: isFinalStep
-            ? outputERC20Amount.expectedBalance
-            : BigNumber.from(0),
+          amount: isFinalStep ? outputERC20Amount.expectedBalance : 0n,
+          recipient: outputERC20Amount.recipient ?? railgunAddress,
         };
       });
     });
+
+    // Map all unhandled ERC20 inputs into recipe outputs.
     input.erc20Amounts.forEach(erc20Amount => {
       const tokenAddress = erc20Amount.tokenAddress.toLowerCase();
-      if (allStepOutputERC20Amounts[tokenAddress]) {
+      if (isDefined(allStepOutputERC20AmountRecipients[tokenAddress])) {
         return;
       }
-      allStepOutputERC20Amounts[tokenAddress] = {
+      allStepOutputERC20AmountRecipients[tokenAddress] = {
         tokenAddress,
         decimals: erc20Amount.decimals,
         isBaseToken: erc20Amount.isBaseToken,
         // Expect 0 amount for unshield outputs.
-        amount: BigNumber.from(0),
+        amount: 0n,
+        recipient: erc20Amount.recipient ?? railgunAddress,
       };
     });
 
     // TODO: After callbacks upgrade, no need to batch-re-shield all tokens.
     // We will only need to re-shield output tokens, or step outputs with slippage.
     // Until then, we need all tokens to re-shield in case of revert.
-    const outputERC20Amounts: RecipeERC20Amount[] = Object.values(
-      allStepOutputERC20Amounts,
-    );
+    const outputERC20AmountRecipients: RecipeERC20AmountRecipient[] =
+      Object.values(allStepOutputERC20AmountRecipients);
+
+    // TODO: Remove 0n amounts after callbacks.
+    // .filter(({ amount }) => amount > 0n);
 
     // TODO: After callbacks upgrade, remove unshield NFTs to auto re-shield.
-    const allStepOutputNFTAmounts: Record<string, RailgunNFTAmount> = {};
+    const allStepOutputNFTAmountRecipients: Record<string, RecipeNFTRecipient> =
+      {};
     stepOutputs.forEach((stepOutput, index) => {
       const isFinalStep = index === stepOutputs.length - 1;
       stepOutput.outputNFTs.forEach(outputNFT => {
         const nftID = Recipe.getNFTID(outputNFT);
-        if (allStepOutputNFTAmounts[nftID] && isFinalStep) {
+        if (isDefined(allStepOutputNFTAmountRecipients[nftID]) && isFinalStep) {
           // Only set amount for final step outputs.
-          allStepOutputNFTAmounts[nftID].amountString = outputNFT.amountString;
+          allStepOutputNFTAmountRecipients[nftID].amount = outputNFT.amount;
           return;
         }
-        allStepOutputNFTAmounts[nftID] = {
+        allStepOutputNFTAmountRecipients[nftID] = {
           ...outputNFT,
-          amountString: isFinalStep ? outputNFT.amountString : '0x00',
+          amount: isFinalStep ? outputNFT.amount : 0n,
+          recipient: outputNFT.recipient ?? railgunAddress,
         };
       });
     });
+
+    // Map all unhandled NFT inputs into recipe outputs.
     input.nfts.forEach(nft => {
       const nftID = Recipe.getNFTID(nft);
-      if (allStepOutputNFTAmounts[nftID]) {
+      if (isDefined(allStepOutputNFTAmountRecipients[nftID])) {
         return;
       }
-      allStepOutputNFTAmounts[nftID] = {
+      allStepOutputNFTAmountRecipients[nftID] = {
         ...nft,
-        amountString: '0x00',
+        amount: 0n,
+        recipient: nft.recipient ?? railgunAddress,
       };
     });
-    const outputNFTs: RailgunNFTAmount[] = Object.values(
-      allStepOutputNFTAmounts,
+
+    const outputNFTRecipients: RecipeNFTRecipient[] = Object.values(
+      allStepOutputNFTAmountRecipients,
     );
 
+    // TODO: Remove 0n amounts after callbacks.
+    // .filter(({ amount }) => amount > 0n);
+
     const feeERC20AmountRecipients: RecipeERC20AmountRecipient[] = stepOutputs
-      .map(output => output.feeERC20AmountRecipients)
+      .map(
+        output =>
+          output.feeERC20AmountRecipients?.filter(feeERC20AmountRecipient => {
+            // Only return fees with non-zero amounts.
+            return feeERC20AmountRecipient.amount > 0n;
+          }) ?? [],
+      )
       .flat();
 
     const recipeOutput: RecipeOutput = {
+      name: this.config.name,
       stepOutputs,
-      populatedTransactions,
-      erc20Amounts: outputERC20Amounts,
-      nfts: outputNFTs,
+      crossContractCalls,
+      erc20AmountRecipients: outputERC20AmountRecipients,
+      nftRecipients: outputNFTRecipients,
       feeERC20AmountRecipients,
+      minGasLimit: this.config.minGasLimit,
     };
     return recipeOutput;
   }

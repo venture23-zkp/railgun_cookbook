@@ -1,18 +1,19 @@
 import {
   RecipeERC20AmountRecipient,
   RecipeERC20Info,
+  StepConfig,
   StepInput,
   StepOutputERC20Amount,
   UnvalidatedStepOutput,
 } from '../../../models/export-models';
 import { compareERC20Info } from '../../../utils/token';
 import { Step } from '../../step';
-import { BeefyVaultData } from '../../../api/beefy';
-import { BeefyVaultContract } from '../../../contract/vault/beefy-vault-contract';
+import { BEEFY_VAULT_ERC20_DECIMALS, BeefyVaultData } from '../../../api/beefy';
+import { BeefyVaultContract } from '../../../contract/vault/beefy/beefy-vault-contract';
 import { calculateOutputsForBeefyWithdraw } from './beefy-util';
 
 export class BeefyWithdrawStep extends Step {
-  readonly config = {
+  readonly config: StepConfig = {
     name: 'Beefy Vault Withdraw',
     description: 'Withdraws from a yield-bearing Beefy Vault.',
   };
@@ -32,15 +33,13 @@ export class BeefyWithdrawStep extends Step {
       depositERC20Address,
       depositERC20Decimals,
       vaultContractAddress,
-      vaultTokenAddress,
-      vaultRate,
-      withdrawFee,
+      vaultERC20Address,
     } = this.vault;
     const { erc20Amounts } = input;
 
     const withdrawERC20Info: RecipeERC20Info = {
-      tokenAddress: vaultTokenAddress,
-      decimals: depositERC20Decimals,
+      tokenAddress: vaultERC20Address,
+      decimals: BEEFY_VAULT_ERC20_DECIMALS,
     };
     const { erc20AmountForStep, unusedERC20Amounts } =
       this.getValidInputERC20Amount(
@@ -50,14 +49,12 @@ export class BeefyWithdrawStep extends Step {
       );
 
     const contract = new BeefyVaultContract(vaultContractAddress);
-    const populatedTransaction = await contract.createWithdrawAll();
+    const crossContractCall = await contract.createWithdrawAll();
 
     const { withdrawFeeAmount, withdrawAmountAfterFee } =
       calculateOutputsForBeefyWithdraw(
         erc20AmountForStep.expectedBalance,
-        withdrawFee,
-        depositERC20Decimals,
-        vaultRate,
+        this.vault,
       );
 
     const spentERC20AmountRecipient: RecipeERC20AmountRecipient = {
@@ -72,20 +69,24 @@ export class BeefyWithdrawStep extends Step {
       minBalance: withdrawAmountAfterFee,
       approvedSpender: undefined,
     };
-    const feeERC20Amount: RecipeERC20AmountRecipient = {
-      tokenAddress: depositERC20Address,
-      decimals: depositERC20Decimals,
-      amount: withdrawFeeAmount,
-      recipient: `Beefy Vault Withdraw Fee`,
-    };
+    const feeERC20AmountRecipients: RecipeERC20AmountRecipient[] =
+      withdrawFeeAmount > 0n
+        ? [
+            {
+              tokenAddress: depositERC20Address,
+              decimals: depositERC20Decimals,
+              amount: withdrawFeeAmount,
+              recipient: `${vaultName} Vault Withdraw Fee`,
+            },
+          ]
+        : [];
 
     return {
-      populatedTransactions: [populatedTransaction],
+      crossContractCalls: [crossContractCall],
       spentERC20Amounts: [spentERC20AmountRecipient],
       outputERC20Amounts: [outputERC20Amount, ...unusedERC20Amounts],
-      spentNFTs: [],
       outputNFTs: input.nfts,
-      feeERC20AmountRecipients: [feeERC20Amount],
+      feeERC20AmountRecipients,
     };
   }
 }
