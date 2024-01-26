@@ -32,7 +32,7 @@ const { expect } = chai;
 
 const networkName = NetworkName.Ethereum;
 
-describe.only('FORK-run-dai-minting-flow', function run() {
+describe('FORK-run-dai-minting-flow', function run() {
   const { WBTC, CDP_MANAGER, MCD_VAT } =
     DaiMinting.getDaiMintingInfoForNetwork(networkName);
 

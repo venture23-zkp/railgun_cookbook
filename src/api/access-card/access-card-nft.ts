@@ -19,6 +19,13 @@ export class AccessCardNFT {
           defaultAccount: '0x85017212843d0Bcaea013DBEaBb8E6491d67BbeC',
           defaultRegistry: '0xa56D94F9b2412A639626C11855a72024345f2E17',
         };
+      // case NetworkName.Ethereum:
+      // case NetworkName.Hardhat:
+      //   return {
+      //     erc721: '0x1666d5B648d7B083480CA3F3504f679C7fA53107',
+      //     defaultAccount: '0x3f71F31CAF936B5B95fe1F207498FE798bD7723b',
+      //     defaultRegistry: '0x28Ea263B1f2a9B04e0D3c8d2CBFA02e6572b98C4',
+      //   };
       case NetworkName.Arbitrum:
       case NetworkName.BNBChain:
       case NetworkName.Railgun:

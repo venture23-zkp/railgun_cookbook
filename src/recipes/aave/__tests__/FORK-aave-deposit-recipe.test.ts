@@ -32,7 +32,7 @@ const { expect } = chai;
 const networkName = NetworkName.Ethereum;
 
 // todo: move unrelated test code to before block
-describe('FORK-run-aave-deposit-recipe', function run() {
+describe.only('FORK-run-aave-deposit-recipe', function run() {
   before(async function run() {
     setRailgunFees(
       networkName,
@@ -128,6 +128,6 @@ describe('FORK-run-aave-deposit-recipe', function run() {
       depositAmount - (MOCK_SHIELD_FEE_BASIS_POINTS * depositAmount) / 10_000n;
 
     // +- 10 for interest calculation
-    expect(aTokenBalance - actualDepositedAmount).to.be.lessThanOrEqual(10);
+    expect(Number(aTokenBalance - actualDepositedAmount)).to.be.lessThanOrEqual(10);
   });
 });
